@@ -874,7 +874,7 @@ if (!error) {
       border: "2px solid #d8d2c4",
       fontSize: "16px",
       letterSpacing: "0.04em",
-      textTransform: "uppercase",
+      textTransform: "none",
       background: "#fffdf8",
        color: "#1f2933",
   fontWeight: "bold",
