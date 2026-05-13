@@ -14,7 +14,7 @@ export const cards: GameCard[] = [
     type: "emotion",
     theme: "Anger",
     title: "Anger",
-    image: "/cards/emotions/EMOTION_anger.png",
+    image: "/cards/emotions/temp_emotion_anger.png",
   },
   {
     id: "emotion_ambition",
