@@ -871,10 +871,13 @@ if (!error) {
       padding: "16px",
       borderRadius: "16px",
       border: "2px solid #d8d2c4",
-      fontSize: "18px",
+      fontSize: "16px",
       letterSpacing: "0.04em",
       textTransform: "uppercase",
       background: "#fffdf8",
+       color: "#1f2933",
+  fontWeight: "bold",
+  boxSizing: "border-box",
     }}
   />
 
