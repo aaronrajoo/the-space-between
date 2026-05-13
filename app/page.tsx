@@ -872,7 +872,7 @@ if (!error) {
       borderRadius: "16px",
       border: "2px solid #d8d2c4",
       fontSize: "18px",
-      letterSpacing: "0.08em",
+      letterSpacing: "0.04em",
       textTransform: "uppercase",
       background: "#fffdf8",
     }}
