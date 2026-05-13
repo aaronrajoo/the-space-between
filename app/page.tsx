@@ -851,10 +851,10 @@ if (!error) {
   placeholder="Your name"
   style={{
     width: "100%",
-    padding: "16px",
+    padding: "16px 12px",
     borderRadius: "16px",
     border: "2px solid #d8d2c4",
-    fontSize: "18px",
+    fontSize: "16px",
     background: "#fffdf8",
     marginBottom: "14px",
   }}
@@ -868,7 +868,8 @@ if (!error) {
     placeholder="Enter room code"
     style={{
       width: "100%",
-      padding: "16px",
+      minWidth:0,
+      padding: "16px 12px",
       borderRadius: "16px",
       border: "2px solid #d8d2c4",
       fontSize: "16px",
