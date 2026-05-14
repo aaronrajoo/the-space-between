@@ -161,6 +161,15 @@ export default function Home() {
   const emotionCards = cards.filter((card) => card.type === "emotion");
   const beliefCards = cards.filter((card) => card.type === "belief");
   const responseCards = cards.filter((card) => card.type === "response");
+  const [draftSituationText, setDraftSituationText] = useState("");
+const [draftCustomEmotion, setDraftCustomEmotion] = useState("");
+const [draftCustomBelief, setDraftCustomBelief] = useState("");
+const [draftCustomResponse, setDraftCustomResponse] = useState("");
+const [draftResponseReflection, setDraftResponseReflection] = useState("");
+const [draftCustomFinalBelief, setDraftCustomFinalBelief] = useState("");
+const [draftCustomFinalEmotion, setDraftCustomFinalEmotion] = useState("");
+const [draftCustomFinalResponse, setDraftCustomFinalResponse] = useState("");
+const [draftReflectionText, setDraftReflectionText] = useState("");
 
   const selectedEmotionCard = emotionCards.find(
     (card) => card.id === selectedEmotion,
@@ -1999,10 +2008,8 @@ useEffect(() => {
 
                     <textarea
                       placeholder="Optional: type what happened here..."
-                      value={activeJourney.situationText}
-                      onChange={(e) =>
-                        updateActiveJourney({ situationText: e.target.value, situationTextConfirmed: false })
-                      }
+                      value={draftSituationText || activeJourney.situationText}
+                      onChange={(e) => setDraftSituationText(e.target.value)}
                       style={{
                         width: "100%",
                         minHeight: "150px",
@@ -2018,11 +2025,12 @@ useEffect(() => {
                       confirmed={Boolean(activeJourney.situationTextConfirmed)}
                       disabled={activeJourney.situationText.trim().length === 0}
                       onConfirm={() =>
-                        updateActiveJourney({
-                          situationTextConfirmed: true,
-                          situationSharedAloud: false,
-                        })
-                      }
+  updateActiveJourney({
+    situationText: draftSituationText || activeJourney.situationText,
+    situationTextConfirmed: true,
+    situationSharedAloud: false,
+  })
+}
                       label="Confirm typed situation"
                       confirmedLabel="✓ Situation confirmed"
                     />
