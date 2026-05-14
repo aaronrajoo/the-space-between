@@ -657,7 +657,29 @@ const journeysChannel = supabase
       </div>
     );
   }
+function RoomCodeBadge() {
+  if (!roomCode) return null;
 
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: "16px",
+        right: "16px",
+        zIndex: 9999,
+        padding: "10px 14px",
+        borderRadius: "999px",
+        background: "#0f766e",
+        color: "white",
+        fontWeight: "bold",
+        fontSize: "14px",
+        boxShadow: "0 8px 20px rgba(0,0,0,0.18)",
+      }}
+    >
+      Room: {roomCode}
+    </div>
+  );
+}
   function StepHeader({
     title,
     label,
@@ -1075,8 +1097,9 @@ setMode("multiLobby");
   }
 
   if (mode === "multiLobby") {
-    return (
-      <main style={pageStyle}>
+  return (
+    <main style={pageStyle}>
+      <RoomCodeBadge />
         <div style={{ maxWidth: "900px", margin: "0 auto" }}>
           <section
             style={{
@@ -1387,8 +1410,9 @@ const myPlayerIndex = joinedPlayers.findIndex(
         journey.reflectionSharedAloud
     );
 
-    return (
-      <main style={pageStyle}>
+   return (
+  <main style={pageStyle}>
+    <RoomCodeBadge />
         <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
           <header
             style={{
