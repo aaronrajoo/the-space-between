@@ -93,9 +93,9 @@ function clearPlayerSession() {
   localStorage.removeItem("space-between-player-session");
 }
 export default function Home() {
-  const [mode, setMode] = useState<
-    "home" | "single" | "multiLobby" | "multi"
-  >("home");
+  const [mode, setMode] = useState<"home" | "single" | "multiLobby" | "multi">(
+    "home",
+  );
 
   const [currentStep, setCurrentStep] = useState(0);
   const [hoveredMode, setHoveredMode] = useState<string | null>(null);
@@ -132,23 +132,24 @@ export default function Home() {
   const [currentReceiverIndex, setCurrentReceiverIndex] = useState(0);
   const [beliefOffers, setBeliefOffers] = useState<BeliefOffer[]>([]);
   const [promptReaders, setPromptReaders] = useState<number[]>([]);
+  const [promptReadAloudStep, setPromptReadAloudStep] = useState(-1);
   const [roomCode, setRoomCode] = useState("");
   const [joinCode, setJoinCode] = useState("");
   const [joinError, setJoinError] = useState("");
   const [playerName, setPlayerName] = useState("");
   const [joinedPlayers, setJoinedPlayers] = useState<RoomPlayer[]>([]);
-const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
+  const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
   const [isHost, setIsHost] = useState(false);
   const emotionCards = cards.filter((card) => card.type === "emotion");
   const beliefCards = cards.filter((card) => card.type === "belief");
   const responseCards = cards.filter((card) => card.type === "response");
 
   const selectedEmotionCard = emotionCards.find(
-    (card) => card.id === selectedEmotion
+    (card) => card.id === selectedEmotion,
   );
 
   const selectedResponseCard = responseCards.find(
-    (card) => card.id === selectedResponse
+    (card) => card.id === selectedResponse,
   );
 
   const singleEmotionText =
@@ -186,8 +187,7 @@ const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
 
   const beliefIsComplete =
     Boolean(selectedBelief) &&
-    (selectedBelief !== BELIEF_WILD_CARD_ID ||
-      customBelief.trim().length > 0);
+    (selectedBelief !== BELIEF_WILD_CARD_ID || customBelief.trim().length > 0);
 
   const timelineIsComplete = timelineDeclared;
 
@@ -243,317 +243,342 @@ const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
     setCurrentReceiverIndex(0);
     setBeliefOffers([]);
     setPromptReaders([]);
+    setPromptReadAloudStep(-1);
   }
-async function leaveRoom() {
-  const leavingRoomCode = roomCode;
-  const leavingPlayerId = myPlayerId;
+  async function leaveRoom() {
+    const leavingRoomCode = roomCode;
+    const leavingPlayerId = myPlayerId;
 
-  if (leavingRoomCode && leavingPlayerId) {
-    const leavingPlayerIndex = joinedPlayers.findIndex(
-      (player) => player.id === leavingPlayerId
-    );
+    if (leavingRoomCode && leavingPlayerId) {
+      const leavingPlayerIndex = joinedPlayers.findIndex(
+        (player) => player.id === leavingPlayerId,
+      );
 
-    if (leavingPlayerIndex >= 0) {
+      if (leavingPlayerIndex >= 0) {
+        await supabase
+          .from("belief_offers")
+          .delete()
+          .eq("room_code", leavingRoomCode)
+          .or(
+            `giver_index.eq.${leavingPlayerIndex},receiver_index.eq.${leavingPlayerIndex}`,
+          );
+      }
+
       await supabase
-        .from("belief_offers")
+        .from("player_journeys")
         .delete()
         .eq("room_code", leavingRoomCode)
-        .or(
-          `giver_index.eq.${leavingPlayerIndex},receiver_index.eq.${leavingPlayerIndex}`
-        );
+        .eq("player_id", leavingPlayerId);
+
+      await supabase
+        .from("players")
+        .delete()
+        .eq("room_code", leavingRoomCode)
+        .eq("id", leavingPlayerId);
     }
 
-    await supabase
-      .from("player_journeys")
-      .delete()
-      .eq("room_code", leavingRoomCode)
-      .eq("player_id", leavingPlayerId);
+    clearPlayerSession();
+    resetGame();
 
-    await supabase
-      .from("players")
-      .delete()
-      .eq("room_code", leavingRoomCode)
-      .eq("id", leavingPlayerId);
+    setRoomCode("");
+    setJoinCode("");
+    setJoinError("");
+    setPlayerName("");
+    setJoinedPlayers([]);
+    setMyPlayerId(null);
+    setIsHost(false);
+    setMultiplayerJourneys([]);
+    setBeliefOffers([]);
+    setPromptReaders([]);
+    setPromptReadAloudStep(-1);
+    setCurrentReceiverIndex(0);
+    setMultiplayerStep(0);
+    setShowClosingScreen(false);
+
+    setMode("home");
   }
-
-  clearPlayerSession();
-  resetGame();
-
-  setRoomCode("");
-  setJoinCode("");
-  setJoinError("");
-  setPlayerName("");
-  setJoinedPlayers([]);
-  setMyPlayerId(null);
-  setIsHost(false);
-  setMultiplayerJourneys([]);
-  setBeliefOffers([]);
-  setPromptReaders([]);
-  setCurrentReceiverIndex(0);
-  setMultiplayerStep(0);
-  setShowClosingScreen(false);
-
-  setMode("home");
-}
 
   function pickPromptReaders(totalSteps: number, totalPlayers: number) {
-  const readers = [];
+    const readers: number[] = [];
 
-  for (let i = 0; i < totalSteps; i++) {
-    readers.push(Math.floor(Math.random() * Math.max(totalPlayers, 1)));
+    for (let i = 0; i < totalSteps; i++) {
+      readers.push(Math.floor(Math.random() * Math.max(totalPlayers, 1)));
+    }
+
+    setPromptReaders(readers);
+    return readers;
   }
-
-  setPromptReaders(readers);
-}
 
   async function loadJoinedPlayers(code: string) {
-  const { data, error } = await supabase
-    .from("players")
-    .select("id, player_name")
-    .eq("room_code", code)
-    .order("created_at", { ascending: true });
-
-  if (error) {
-    return [];
-  }
-
-  setJoinedPlayers(data);
-  return data;
-}
-
-async function loadRoomStep(code: string) {
-  const { data, error } = await supabase
-    .from("rooms")
-    .select("current_step, current_receiver_index")
-    .eq("room_code", code)
-    .single();
-
-  if (error || !data) {
-    return;
-  }
-
-  setMultiplayerStep(data.current_step);
-  setCurrentReceiverIndex(data.current_receiver_index ?? 0);
-}
-async function loadPlayerJourneys(code: string, players: RoomPlayer[]) {
-  const { data, error } = await supabase
-    .from("player_journeys")
-    .select("player_id, journey")
-    .eq("room_code", code);
-
-  if (error) {
-    return;
-  }
-
-  const journeysByPlayer = players.map((player) => {
-    const existing = data.find((row) => row.player_id === player.id);
-    return existing?.journey ?? createEmptyJourney();
-  });
-
-  setMultiplayerJourneys(journeysByPlayer);
-}
-async function loadBeliefOffers(code: string) {
-  const { data, error } = await supabase
-    .from("belief_offers")
-    .select("receiver_index, giver_index, belief_id")
-    .eq("room_code", code);
-
-  if (error) {
-    return;
-  }
-
-  setBeliefOffers(
-    data.map((row) => ({
-      receiverIndex: row.receiver_index,
-      giverIndex: row.giver_index,
-      beliefId: row.belief_id,
-    }))
-  );
-}
-async function updateRoomStep(step: number) {
-  if (!roomCode) return;
-
-  setMultiplayerStep(step);
-
-  const { error } = await supabase
-    .from("rooms")
-    .update({
-      current_step: step,
-    })
-    .eq("room_code", roomCode);
-
-  if (error) {
-  }
-}
-
-async function updateCurrentReceiverIndex(index: number) {
-  if (!roomCode) return;
-
-  setCurrentReceiverIndex(index);
-
-  const { error } = await supabase
-    .from("rooms")
-    .update({
-      current_receiver_index: index,
-    })
-    .eq("room_code", roomCode);
-
-  if (error) {
-  }
-}
-useEffect(() => {
-  const saved = localStorage.getItem("space-between-player-session");
-
-  if (!saved || mode !== "home") return;
-
-  async function checkSavedSession() {
-    const session = JSON.parse(saved!) as SavedPlayerSession;
-
-    const shouldReconnect = window.confirm(
-      `Rejoin room ${session.roomCode} as ${session.playerName}?`
-    );
-
-    if (!shouldReconnect) {
-      clearPlayerSession();
-      return;
-    }
-
-    const { data: playerData, error: playerError } = await supabase
+    const { data, error } = await supabase
       .from("players")
       .select("id, player_name")
-      .eq("room_code", session.roomCode)
-      .eq("id", session.playerId)
+      .eq("room_code", code)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      return [];
+    }
+
+    setJoinedPlayers(data);
+    return data;
+  }
+
+  async function loadRoomStep(code: string) {
+    const { data, error } = await supabase
+      .from("rooms")
+      .select(
+        "current_step, current_receiver_index, prompt_readers, prompt_read_aloud_step",
+      )
+      .eq("room_code", code)
       .single();
 
-    if (playerError || !playerData) {
-      clearPlayerSession();
-      alert("Could not reconnect. Please join the room again.");
+    if (error || !data) {
       return;
     }
 
-    setRoomCode(session.roomCode);
-    setMyPlayerId(session.playerId);
-    setPlayerName(session.playerName);
-    
-    const players = await loadJoinedPlayers(session.roomCode);
-    const hostPlayerId = players[0]?.id;
-    setIsHost(session.playerId === hostPlayerId);
-    await loadRoomStep(session.roomCode);
-    await loadPlayerJourneys(session.roomCode, players);
-    await loadBeliefOffers(session.roomCode);
+    setMultiplayerStep(data.current_step);
+    setCurrentReceiverIndex(data.current_receiver_index ?? 0);
+    setPromptReaders(data.prompt_readers ?? []);
+    setPromptReadAloudStep(data.prompt_read_aloud_step ?? -1);
+  }
+  async function loadPlayerJourneys(code: string, players: RoomPlayer[]) {
+    const { data, error } = await supabase
+      .from("player_journeys")
+      .select("player_id, journey")
+      .eq("room_code", code);
 
-    const { data: roomData } = await supabase
-  .from("rooms")
-  .select("current_step")
-  .eq("room_code", session.roomCode)
-  .single();
+    if (error) {
+      return;
+    }
 
-if ((roomData?.current_step ?? -1) < 0) {
-  setMode("multiLobby");
-} else {
-  setMode("multi");
-}
+    const journeysByPlayer = players.map((player) => {
+      const existing = data.find((row) => row.player_id === player.id);
+      return existing?.journey ?? createEmptyJourney();
+    });
+
+    setMultiplayerJourneys(journeysByPlayer);
+  }
+  async function loadBeliefOffers(code: string) {
+    const { data, error } = await supabase
+      .from("belief_offers")
+      .select("receiver_index, giver_index, belief_id")
+      .eq("room_code", code);
+
+    if (error) {
+      return;
+    }
+
+    setBeliefOffers(
+      data.map((row) => ({
+        receiverIndex: row.receiver_index,
+        giverIndex: row.giver_index,
+        beliefId: row.belief_id,
+      })),
+    );
+  }
+  async function updateRoomStep(step: number) {
+    if (!roomCode) return;
+
+    setMultiplayerStep(step);
+
+    const { error } = await supabase
+      .from("rooms")
+      .update({
+        current_step: step,
+      })
+      .eq("room_code", roomCode);
+
+    if (error) {
+    }
   }
 
-  checkSavedSession();
-}, [mode]);
-useEffect(() => {
-  if (!roomCode) return;
+  async function updateCurrentReceiverIndex(index: number) {
+    if (!roomCode) return;
 
-  async function initialiseRoom() {
-  const players = await loadJoinedPlayers(roomCode);
-  await loadRoomStep(roomCode);
-  await loadPlayerJourneys(roomCode, players);
-  await loadBeliefOffers(roomCode);
-}
+    setCurrentReceiverIndex(index);
 
-initialiseRoom();
+    const { error } = await supabase
+      .from("rooms")
+      .update({
+        current_receiver_index: index,
+      })
+      .eq("room_code", roomCode);
 
-  const playersChannel = supabase
-    .channel(`players-${roomCode}`)
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "players",
-        filter: `room_code=eq.${roomCode}`,
-      },
-      async () => {
-  const players = await loadJoinedPlayers(roomCode);
-  await loadPlayerJourneys(roomCode, players);
-  await loadBeliefOffers(roomCode);
-}
-    )
-    .subscribe();
-
-  const roomChannel = supabase
-    .channel(`room-${roomCode}`)
-    .on(
-      "postgres_changes",
-      {
-        event: "UPDATE",
-        schema: "public",
-        table: "rooms",
-        filter: `room_code=eq.${roomCode}`,
-      },
-      (payload) => {
-
-        const updatedRoom = payload.new as {
-  current_step: number;
-  current_receiver_index: number;
-};
-        setMultiplayerStep(updatedRoom.current_step);
-        setCurrentReceiverIndex(updatedRoom.current_receiver_index ?? 0);
-
-if (updatedRoom.current_step >= 0) {
-  setMode("multi");
-}
-
-if (mode === "multiLobby") {
-  setMode("multi");
-}
-      }
-    )
-    .subscribe();
-const journeysChannel = supabase
-  .channel(`player-journeys-${roomCode}`)
-  .on(
-    "postgres_changes",
-    {
-      event: "*",
-      schema: "public",
-      table: "player_journeys",
-      filter: `room_code=eq.${roomCode}`,
-    },
-    async () => {
-      const players = await loadJoinedPlayers(roomCode);
-      await loadPlayerJourneys(roomCode, players);
+    if (error) {
     }
-  )
-  .subscribe();
-  const beliefOffersChannel = supabase
-  .channel(`belief-offers-${roomCode}`)
-  .on(
-    "postgres_changes",
-    {
-      event: "*",
-      schema: "public",
-      table: "belief_offers",
-      filter: `room_code=eq.${roomCode}`,
-    },
-    async () => {
+  }
+  async function updatePromptReadAloudStep(step: number) {
+    if (!roomCode) return;
+
+    setPromptReadAloudStep(step);
+
+    const { error } = await supabase
+      .from("rooms")
+      .update({
+        prompt_read_aloud_step: step,
+      })
+      .eq("room_code", roomCode);
+
+    if (error) {
+    }
+  }
+  useEffect(() => {
+    const saved = localStorage.getItem("space-between-player-session");
+
+    if (!saved || mode !== "home") return;
+
+    async function checkSavedSession() {
+      const session = JSON.parse(saved!) as SavedPlayerSession;
+
+      const shouldReconnect = window.confirm(
+        `Rejoin room ${session.roomCode} as ${session.playerName}?`,
+      );
+
+      if (!shouldReconnect) {
+        clearPlayerSession();
+        return;
+      }
+
+      const { data: playerData, error: playerError } = await supabase
+        .from("players")
+        .select("id, player_name")
+        .eq("room_code", session.roomCode)
+        .eq("id", session.playerId)
+        .single();
+
+      if (playerError || !playerData) {
+        clearPlayerSession();
+        alert("Could not reconnect. Please join the room again.");
+        return;
+      }
+
+      setRoomCode(session.roomCode);
+      setMyPlayerId(session.playerId);
+      setPlayerName(session.playerName);
+
+      const players = await loadJoinedPlayers(session.roomCode);
+      const hostPlayerId = players[0]?.id;
+      setIsHost(session.playerId === hostPlayerId);
+      await loadRoomStep(session.roomCode);
+      await loadPlayerJourneys(session.roomCode, players);
+      await loadBeliefOffers(session.roomCode);
+
+      const { data: roomData } = await supabase
+        .from("rooms")
+        .select("current_step")
+        .eq("room_code", session.roomCode)
+        .single();
+
+      if ((roomData?.current_step ?? -1) < 0) {
+        setMode("multiLobby");
+      } else {
+        setMode("multi");
+      }
+    }
+
+    checkSavedSession();
+  }, [mode]);
+  useEffect(() => {
+    if (!roomCode) return;
+
+    async function initialiseRoom() {
+      const players = await loadJoinedPlayers(roomCode);
+      await loadRoomStep(roomCode);
+      await loadPlayerJourneys(roomCode, players);
       await loadBeliefOffers(roomCode);
     }
-  )
-  .subscribe();
-  return () => {
-    supabase.removeChannel(playersChannel);
-    supabase.removeChannel(roomChannel);
-    supabase.removeChannel(journeysChannel);
-    supabase.removeChannel(beliefOffersChannel);
-  };
-}, [roomCode]);
+
+    initialiseRoom();
+
+    const playersChannel = supabase
+      .channel(`players-${roomCode}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "players",
+          filter: `room_code=eq.${roomCode}`,
+        },
+        async () => {
+          const players = await loadJoinedPlayers(roomCode);
+          await loadPlayerJourneys(roomCode, players);
+          await loadBeliefOffers(roomCode);
+        },
+      )
+      .subscribe();
+
+    const roomChannel = supabase
+      .channel(`room-${roomCode}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "rooms",
+          filter: `room_code=eq.${roomCode}`,
+        },
+        (payload) => {
+          const updatedRoom = payload.new as {
+            current_step: number;
+            current_receiver_index: number;
+            prompt_readers?: number[];
+            prompt_read_aloud_step?: number;
+          };
+          setMultiplayerStep(updatedRoom.current_step);
+          setCurrentReceiverIndex(updatedRoom.current_receiver_index ?? 0);
+          setPromptReaders(updatedRoom.prompt_readers ?? []);
+          setPromptReadAloudStep(updatedRoom.prompt_read_aloud_step ?? -1);
+
+          if (updatedRoom.current_step >= 0) {
+            setMode("multi");
+          }
+
+          if (mode === "multiLobby") {
+            setMode("multi");
+          }
+        },
+      )
+      .subscribe();
+    const journeysChannel = supabase
+      .channel(`player-journeys-${roomCode}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "player_journeys",
+          filter: `room_code=eq.${roomCode}`,
+        },
+        async () => {
+          const players = await loadJoinedPlayers(roomCode);
+          await loadPlayerJourneys(roomCode, players);
+        },
+      )
+      .subscribe();
+    const beliefOffersChannel = supabase
+      .channel(`belief-offers-${roomCode}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "belief_offers",
+          filter: `room_code=eq.${roomCode}`,
+        },
+        async () => {
+          await loadBeliefOffers(roomCode);
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(playersChannel);
+      supabase.removeChannel(roomChannel);
+      supabase.removeChannel(journeysChannel);
+      supabase.removeChannel(beliefOffersChannel);
+    };
+  }, [roomCode]);
 
   const cardButtonStyle = (isSelected: boolean) => ({
     border: isSelected
@@ -693,46 +718,37 @@ const journeysChannel = supabase
         </p>
 
         <div style={{ marginTop: "42px" }}>
-          <button
-  onClick={leaveRoom}
-  style={primaryButtonStyle}
->
+          <button onClick={leaveRoom} style={primaryButtonStyle}>
             Return Home
           </button>
         </div>
       </div>
     );
   }
-function RoomCodeBadge() {
-  if (!roomCode) return null;
+  function RoomCodeBadge() {
+    if (!roomCode) return null;
 
-  return (
-    <div
-      style={{
-        position: "fixed",
-        top: "16px",
-        right: "16px",
-        zIndex: 9999,
-        padding: "10px 14px",
-        borderRadius: "999px",
-        background: "#0f766e",
-        color: "white",
-        fontWeight: "bold",
-        fontSize: "14px",
-        boxShadow: "0 8px 20px rgba(0,0,0,0.18)",
-      }}
-    >
-      Room: {roomCode}
-    </div>
-  );
-}
-  function StepHeader({
-    title,
-    label,
-  }: {
-    title: string;
-    label: string;
-  }) {
+    return (
+      <div
+        style={{
+          position: "fixed",
+          top: "16px",
+          right: "16px",
+          zIndex: 9999,
+          padding: "10px 14px",
+          borderRadius: "999px",
+          background: "#0f766e",
+          color: "white",
+          fontWeight: "bold",
+          fontSize: "14px",
+          boxShadow: "0 8px 20px rgba(0,0,0,0.18)",
+        }}
+      >
+        Room: {roomCode}
+      </div>
+    );
+  }
+  function StepHeader({ title, label }: { title: string; label: string }) {
     return (
       <div
         style={{
@@ -755,26 +771,26 @@ function RoomCodeBadge() {
   if (mode === "home") {
     return (
       <main style={pageStyle}>
-          {roomCode && (
-    <div
-      style={{
-        position: "fixed",
-        top: "16px",
-        right: "16px",
-        zIndex: 100,
-        padding: "10px 14px",
-        borderRadius: "999px",
-        background: "#ccfbf1",
-        color: "#115e59",
-        fontWeight: "bold",
-        fontSize: "14px",
-        boxShadow: "0 8px 20px rgba(0,0,0,0.12)",
-      }}
-    >
-      Room: {roomCode}
-    </div>
-  )}
-        
+        {roomCode && (
+          <div
+            style={{
+              position: "fixed",
+              top: "16px",
+              right: "16px",
+              zIndex: 100,
+              padding: "10px 14px",
+              borderRadius: "999px",
+              background: "#ccfbf1",
+              color: "#115e59",
+              fontWeight: "bold",
+              fontSize: "14px",
+              boxShadow: "0 8px 20px rgba(0,0,0,0.12)",
+            }}
+          >
+            Room: {roomCode}
+          </div>
+        )}
+
         <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
           <section
             style={{
@@ -862,8 +878,7 @@ function RoomCodeBadge() {
                     hoveredMode === "single"
                       ? "2px solid #0f766e"
                       : "2px solid #d8d2c4",
-                  background:
-                    hoveredMode === "single" ? "#ccfbf1" : "#fffdf8",
+                  background: hoveredMode === "single" ? "#ccfbf1" : "#fffdf8",
                   boxShadow:
                     hoveredMode === "single"
                       ? "0 18px 40px rgba(15,118,110,0.22)"
@@ -873,9 +888,7 @@ function RoomCodeBadge() {
                   cursor: "pointer",
                 }}
               >
-                <h2 style={{ margin: 0, fontSize: "26px" }}>
-                  Single Player
-                </h2>
+                <h2 style={{ margin: 0, fontSize: "26px" }}>Single Player</h2>
                 <p
                   style={{
                     marginTop: "12px",
@@ -892,59 +905,61 @@ function RoomCodeBadge() {
 
               <button
                 onClick={async () => {
-                  const hostName = window.prompt("Enter your name as the host:");
+                  const hostName = window.prompt(
+                    "Enter your name as the host:",
+                  );
 
-if (!hostName || !hostName.trim()) {
-  return;
-}
-  const roomCode = Math.random()
-    .toString(36)
-    .substring(2, 8)
-    .toUpperCase();
+                  if (!hostName || !hostName.trim()) {
+                    return;
+                  }
+                  const roomCode = Math.random()
+                    .toString(36)
+                    .substring(2, 8)
+                    .toUpperCase();
 
-  const { data, error } = await supabase
-    .from("rooms")
-    .insert([
-      {
-        room_code: roomCode,
-        current_step: -1,
-        current_receiver_index: 0,
-      },
-    ]);
+                  const { data, error } = await supabase.from("rooms").insert([
+                    {
+                      room_code: roomCode,
+                      current_step: -1,
+                      current_receiver_index: 0,
+                      prompt_readers: [],
+                      prompt_read_aloud_step: -1,
+                    },
+                  ]);
 
+                  if (!error) {
+                    setRoomCode(roomCode);
+                    setIsHost(true);
 
-if (!error) {
-  setRoomCode(roomCode);
-  setIsHost(true);
+                    const { data: playerData, error: playerError } =
+                      await supabase
+                        .from("players")
+                        .insert([
+                          {
+                            room_code: roomCode,
+                            player_name: hostName.trim(),
+                          },
+                        ])
+                        .select("id")
+                        .single();
 
-    const { data: playerData, error: playerError } = await supabase
-    .from("players")
-    .insert([
-      {
-        room_code: roomCode,
-        player_name: hostName.trim(),
-      },
-    ])
-    .select("id")
-    .single();
+                    if (!playerError && playerData) {
+                      setMyPlayerId(playerData.id);
 
- if (!playerError && playerData) {
-  setMyPlayerId(playerData.id);
+                      savePlayerSession({
+                        roomCode,
+                        playerId: playerData.id,
+                        playerName: hostName.trim(),
+                        isHost: true,
+                      });
+                    }
 
-  savePlayerSession({
-    roomCode,
-    playerId: playerData.id,
-    playerName: hostName.trim(),
-    isHost: true,
-  });
-}
+                    await loadJoinedPlayers(roomCode);
+                    await loadRoomStep(roomCode);
 
-  await loadJoinedPlayers(roomCode);
-  await loadRoomStep(roomCode);
-
-  setMode("multiLobby");
-}
-}}
+                    setMode("multiLobby");
+                  }
+                }}
                 onMouseEnter={() => setHoveredMode("multi")}
                 onMouseLeave={() => setHoveredMode(null)}
                 style={{
@@ -954,8 +969,7 @@ if (!error) {
                     hoveredMode === "multi"
                       ? "2px solid #0f766e"
                       : "2px solid #d8d2c4",
-                  background:
-                    hoveredMode === "multi" ? "#ccfbf1" : "#fffdf8",
+                  background: hoveredMode === "multi" ? "#ccfbf1" : "#fffdf8",
                   boxShadow:
                     hoveredMode === "multi"
                       ? "0 18px 40px rgba(15,118,110,0.22)"
@@ -975,177 +989,182 @@ if (!error) {
                     color: "#52606d",
                   }}
                 >
-                  Create and host a new shared reflection room and invite others to explore the game together.
+                  Create and host a new shared reflection room and invite others
+                  to explore the game together.
                 </p>
               </button>
-              </div>
-              <div
-  style={{
-    marginTop: "36px",
-    padding: "24px",
-    borderRadius: "28px",
-    background: "#fffdf8",
-    boxShadow: "0 14px 30px rgba(15,118,110,0.10)",
-    maxWidth: "520px",
-  }}
->
-  <h3 style={{ marginTop: 0, fontSize: "22px" }}>
-    Join an existing Multiplayer Room
-  </h3>
+            </div>
+            <div
+              style={{
+                marginTop: "36px",
+                padding: "24px",
+                borderRadius: "28px",
+                background: "#fffdf8",
+                boxShadow: "0 14px 30px rgba(15,118,110,0.10)",
+                maxWidth: "520px",
+              }}
+            >
+              <h3 style={{ marginTop: 0, fontSize: "22px" }}>
+                Join an existing Multiplayer Room
+              </h3>
 
-  <p style={{ color: "#52606d", lineHeight: 1.6 }}>
-    Enter a room code shared by another player.
-  </p>
-<input
-  value={playerName}
-  onChange={(e) => setPlayerName(e.target.value)}
-  placeholder="Your name"
-  style={{
-    width: "100%",
-    padding: "16px 12px",
-    borderRadius: "16px",
-    border: "2px solid #d8d2c4",
-    fontSize: "16px",
-    background: "#fffdf8",
-    marginBottom: "14px",
-  }}
-/>
-  <input
-    value={joinCode}
-    onChange={(e) => {
-      setJoinCode(e.target.value.toUpperCase());
-      setJoinError("");
-    }}
-    placeholder="Enter room code"
-    style={{
-      width: "100%",
-      minWidth:0,
-      padding: "16px 12px",
-      borderRadius: "16px",
-      border: "2px solid #d8d2c4",
-      fontSize: "16px",
-      letterSpacing: "0.04em",
-      textTransform: "none",
-      background: "#fffdf8",
-       color: "#1f2933",
-  fontWeight: "bold",
-  boxSizing: "border-box",
-    }}
-  />
+              <p style={{ color: "#52606d", lineHeight: 1.6 }}>
+                Enter a room code shared by another player.
+              </p>
+              <input
+                value={playerName}
+                onChange={(e) => setPlayerName(e.target.value)}
+                placeholder="Your name"
+                style={{
+                  width: "100%",
+                  padding: "16px 12px",
+                  borderRadius: "16px",
+                  border: "2px solid #d8d2c4",
+                  fontSize: "16px",
+                  background: "#fffdf8",
+                  marginBottom: "14px",
+                }}
+              />
+              <input
+                value={joinCode}
+                onChange={(e) => {
+                  setJoinCode(e.target.value.toUpperCase());
+                  setJoinError("");
+                }}
+                placeholder="Enter room code"
+                style={{
+                  width: "100%",
+                  minWidth: 0,
+                  padding: "16px 12px",
+                  borderRadius: "16px",
+                  border: "2px solid #d8d2c4",
+                  fontSize: "16px",
+                  letterSpacing: "0.04em",
+                  textTransform: "none",
+                  background: "#fffdf8",
+                  color: "#1f2933",
+                  fontWeight: "bold",
+                  boxSizing: "border-box",
+                }}
+              />
 
-  {joinError && (
-    <p style={{ color: "#b91c1c", marginTop: "12px" }}>
-      {joinError}
-    </p>
-  )}
+              {joinError && (
+                <p style={{ color: "#b91c1c", marginTop: "12px" }}>
+                  {joinError}
+                </p>
+              )}
 
-  <button
-    onClick={async () => {
-      const cleanedCode = joinCode.trim().toUpperCase();
-      if (!playerName.trim()) {
-  setJoinError("Please enter your name.");
-  return;
-}
-      if (!cleanedCode) {
-        setJoinError("Please enter a room code.");
-        return;
-      }
+              <button
+                onClick={async () => {
+                  const cleanedCode = joinCode.trim().toUpperCase();
+                  if (!playerName.trim()) {
+                    setJoinError("Please enter your name.");
+                    return;
+                  }
+                  if (!cleanedCode) {
+                    setJoinError("Please enter a room code.");
+                    return;
+                  }
 
-      const { data, error } = await supabase
-        .from("rooms")
-        .select("*")
-        .eq("room_code", cleanedCode)
-        .single();
+                  const { data, error } = await supabase
+                    .from("rooms")
+                    .select("*")
+                    .eq("room_code", cleanedCode)
+                    .single();
 
-      if (error || !data) {
-        setJoinError("Room not found. Check the code and try again.");
-        return;
-      }
+                  if (error || !data) {
+                    setJoinError(
+                      "Room not found. Check the code and try again.",
+                    );
+                    return;
+                  }
 
-      setRoomCode(data.room_code);
-    const { data: playerData, error: playerError } = await supabase
-  .from("players")
-  .insert([
-    {
-      room_code: data.room_code,
-      player_name: playerName.trim(),
-    },
-  ])
-  .select("id")
-  .single();
+                  setRoomCode(data.room_code);
+                  const { data: playerData, error: playerError } =
+                    await supabase
+                      .from("players")
+                      .insert([
+                        {
+                          room_code: data.room_code,
+                          player_name: playerName.trim(),
+                        },
+                      ])
+                      .select("id")
+                      .single();
 
-if (playerError || !playerData) {
-  setJoinError("Could not join room. Please try again.");
-  return;
-}
-setRoomCode(data.room_code);
-setMyPlayerId(playerData.id);
-savePlayerSession({
-  roomCode: data.room_code,
-  playerId: playerData.id,
-  playerName: playerName.trim(),
-  isHost: false,
-});
-await loadJoinedPlayers(data.room_code);
-await loadRoomStep(data.room_code);
+                  if (playerError || !playerData) {
+                    setJoinError("Could not join room. Please try again.");
+                    return;
+                  }
+                  setRoomCode(data.room_code);
+                  setMyPlayerId(playerData.id);
+                  savePlayerSession({
+                    roomCode: data.room_code,
+                    playerId: playerData.id,
+                    playerName: playerName.trim(),
+                    isHost: false,
+                  });
+                  await loadJoinedPlayers(data.room_code);
+                  await loadRoomStep(data.room_code);
 
-setIsHost(false);
-setMode("multiLobby");
-    }}
-    style={{
-      ...primaryButtonStyle,
-      marginTop: "18px",
-    }}
-  >
-    Join Room
-  </button>
-</div>
-
+                  setIsHost(false);
+                  setMode("multiLobby");
+                }}
+                style={{
+                  ...primaryButtonStyle,
+                  marginTop: "18px",
+                }}
+              >
+                Join Room
+              </button>
+            </div>
           </section>
-          
+
           <div
-  style={{
-    marginTop: "56px",
-    maxWidth: "700px",
-    textAlign: "left",
-    color: "#64748b",
-    lineHeight: 1.7,
-    fontSize: "15px",
-  }}
->
-  <p style={{ marginBottom: "28px" }}>
-    <strong>Designed by Aaron Rajoo</strong>
-    <br />
-    Lead Teacher for Character and Citizenship Education at Northland Secondary School
-  </p>
+            style={{
+              marginTop: "56px",
+              maxWidth: "700px",
+              textAlign: "left",
+              color: "#64748b",
+              lineHeight: 1.7,
+              fontSize: "15px",
+            }}
+          >
+            <p style={{ marginBottom: "28px" }}>
+              <strong>Designed by Aaron Rajoo</strong>
+              <br />
+              Lead Teacher for Character and Citizenship Education at Northland
+              Secondary School
+            </p>
 
-  <p style={{ marginBottom: "28px" }}>
-    In collaboration with Elsa Chen (School Staff Developer),
-    <br />
-    and colleagues from the Organisational Development and
-    Psychology Branch:
-    <br />
-    Phyllis, Cara, and Hui Qin
-  </p>
+            <p style={{ marginBottom: "28px" }}>
+              In collaboration with Elsa Chen (School Staff Developer),
+              <br />
+              and colleagues from the Organisational Development and Psychology
+              Branch:
+              <br />
+              Phyllis, Cara, and Hui Qin
+            </p>
 
-  <p
-    style={{
-      fontStyle: "italic",
-      opacity: 0.85,
-    }}
-  >
-    Inspired and adapted from “Let’s Unpack This” by The Happiness Initiative
-  </p>
-</div>
+            <p
+              style={{
+                fontStyle: "italic",
+                opacity: 0.85,
+              }}
+            >
+              Inspired and adapted from “Let’s Unpack This” by The Happiness
+              Initiative
+            </p>
+          </div>
         </div>
       </main>
     );
   }
 
   if (mode === "multiLobby") {
-  return (
-    <main style={pageStyle}>
-      <RoomCodeBadge />
+    return (
+      <main style={pageStyle}>
+        <RoomCodeBadge />
         <div style={{ maxWidth: "900px", margin: "0 auto" }}>
           <section
             style={{
@@ -1195,65 +1214,80 @@ setMode("multiLobby");
                 color: "#52606d",
               }}
             >
-              Invite others with this room code. The host guides the group through each step together.
+              Invite others with this room code. The host guides the group
+              through each step together.
             </p>
             <div
-  style={{
-    marginTop: "28px",
-    padding: "24px",
-    borderRadius: "24px",
-    background: "#ccfbf1",
-    color: "#115e59",
-    maxWidth: "420px",
-  }}
->
-  <p
-    style={{
-      margin: 0,
-      fontSize: "14px",
-      fontWeight: "bold",
-      letterSpacing: "0.12em",
-      textTransform: "uppercase",
-    }}
-  >
-    Room Code
-  </p>
+              style={{
+                marginTop: "28px",
+                padding: "24px",
+                borderRadius: "24px",
+                background: "#ccfbf1",
+                color: "#115e59",
+                maxWidth: "420px",
+              }}
+            >
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "14px",
+                  fontWeight: "bold",
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                }}
+              >
+                Room Code
+              </p>
 
-  <p
-    style={{
-      margin: "8px 0 0",
-      fontSize: "42px",
-      fontWeight: "bold",
-      letterSpacing: "0.12em",
-    }}
-  >
-    {roomCode}
-  </p>
-</div>
-<p style={{ fontSize: "18px", fontWeight: "bold", color: "#0f766e" }}>
-  Current Stage: {multiplayerStep < 0 ? "Lobby" : `Step ${multiplayerStep + 1}`}
-</p>
+              <p
+                style={{
+                  margin: "8px 0 0",
+                  fontSize: "42px",
+                  fontWeight: "bold",
+                  letterSpacing: "0.12em",
+                }}
+              >
+                {roomCode}
+              </p>
+            </div>
+            <p
+              style={{ fontSize: "18px", fontWeight: "bold", color: "#0f766e" }}
+            >
+              Current Stage:{" "}
+              {multiplayerStep < 0 ? "Lobby" : `Step ${multiplayerStep + 1}`}
+            </p>
 
-{isHost && (
-  <button
-    onClick={async () => {
-      if (joinedPlayers.length < 2) return;
-      pickPromptReaders(10, joinedPlayers.length);
-      await updateCurrentReceiverIndex(0);
-      await updateRoomStep(0);
-      setMode("multi");
-    }}
-    disabled={joinedPlayers.length < 2}
-    style={{
-      ...primaryButtonStyle,
-      marginTop: "20px",
-      opacity: joinedPlayers.length >= 2 ? 1 : 0.4,
-      cursor: joinedPlayers.length >= 2 ? "pointer" : "not-allowed",
-    }}
-  >
-    {joinedPlayers.length >= 2 ? "Start Game" : "Waiting for another player"}
-  </button>
-)}
+            {isHost && (
+              <button
+                onClick={async () => {
+                  if (joinedPlayers.length < 2 || !roomCode) return;
+                  const readers = pickPromptReaders(10, joinedPlayers.length);
+                  setPromptReadAloudStep(-1);
+                  await supabase
+                    .from("rooms")
+                    .update({
+                      prompt_readers: readers,
+                      prompt_read_aloud_step: -1,
+                      current_receiver_index: 0,
+                    })
+                    .eq("room_code", roomCode);
+                  await updateCurrentReceiverIndex(0);
+                  await updateRoomStep(0);
+                  setMode("multi");
+                }}
+                disabled={joinedPlayers.length < 2}
+                style={{
+                  ...primaryButtonStyle,
+                  marginTop: "20px",
+                  opacity: joinedPlayers.length >= 2 ? 1 : 0.4,
+                  cursor: joinedPlayers.length >= 2 ? "pointer" : "not-allowed",
+                }}
+              >
+                {joinedPlayers.length >= 2
+                  ? "Start Game"
+                  : "Waiting for another player"}
+              </button>
+            )}
             <div
               style={{
                 marginTop: "30px",
@@ -1263,32 +1297,31 @@ setMode("multiLobby");
               }}
             >
               <div
-  style={{
-    marginTop: "30px",
-    display: "grid",
-    gap: "14px",
-    maxWidth: "500px",
-  }}
->
-  {joinedPlayers.map((player, index) => (
-  <div
-    key={player.id}
-    style={{
-      padding: "18px 20px",
-      borderRadius: "20px",
-      background: "#fffdf8",
-      boxShadow: "0 8px 20px rgba(0,0,0,0.06)",
-      fontSize: "18px",
-      fontWeight: "bold",
-    }}
-  >
-    Player {index + 1}: {player.player_name}
-{index === 0 ? " (Host)" : ""}
-  </div>
-))}
-</div>
+                style={{
+                  marginTop: "30px",
+                  display: "grid",
+                  gap: "14px",
+                  maxWidth: "500px",
+                }}
+              >
+                {joinedPlayers.map((player, index) => (
+                  <div
+                    key={player.id}
+                    style={{
+                      padding: "18px 20px",
+                      borderRadius: "20px",
+                      background: "#fffdf8",
+                      boxShadow: "0 8px 20px rgba(0,0,0,0.06)",
+                      fontSize: "18px",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    Player {index + 1}: {player.player_name}
+                    {index === 0 ? " (Host)" : ""}
+                  </div>
+                ))}
+              </div>
             </div>
-
           </section>
         </div>
       </main>
@@ -1297,16 +1330,73 @@ setMode("multiLobby");
 
   if (mode === "multi") {
     const activePlayer = joinedPlayers.find(
-  (player) => player.id === myPlayerId
-);
-const myPlayerIndex = joinedPlayers.findIndex(
-  (player) => player.id === myPlayerId
-);
-    const promptReader =
-  joinedPlayers[promptReaders[multiplayerStep] ?? 0]?.player_name ||
-  "Player";
+      (player) => player.id === myPlayerId,
+    );
+    const myPlayerIndex = joinedPlayers.findIndex(
+      (player) => player.id === myPlayerId,
+    );
+    const promptDefinitions = [
+      {
+        title: "Step 1 — Emotion",
+        prompt: "What emotion feels most true right now or recently?",
+      },
+      {
+        title: "Step 2 — Situation",
+        prompt:
+          "Describe what happened using facts only. Imagine reporting what a camera would have recorded.",
+      },
+      {
+        title: "Step 3 — Belief",
+        prompt:
+          "What belief might be beneath the story you’re telling yourself about what happened?",
+      },
+      {
+        title: "Step 4 — Declare the Timeline",
+        prompt: "Take turns to declare your timeline aloud.",
+      },
+      {
+        title: "Step 5 — Response",
+        prompt: "What is one response you are willing to try?",
+      },
+      {
+        title: "Level 1 Complete",
+        prompt:
+          "We are moving into Level 2. Listen for other possible beliefs, not to fix anyone, but to notice what else could also be true.",
+      },
+      {
+        title: "Step 6 — Alternative Beliefs",
+        prompt:
+          "This round, one player receives alternative beliefs. Everyone else silently offers one possible lens.",
+      },
+      {
+        title: "Step 7 — Meaning-Making",
+        prompt:
+          "Review the alternative beliefs offered to you. Keep what feels useful, and leave what does not.",
+      },
+      {
+        title: "Step 8 — Final Response",
+        prompt: "Choose the response you now want to carry forward.",
+      },
+      {
+        title: "Step 9 — Reflection",
+        prompt:
+          "Take a moment to reflect on what shifted, what stayed, and what you want to remember.",
+      },
+    ];
+
+    const currentPrompt = promptDefinitions[multiplayerStep];
+    const promptReaderIndex = promptReaders[multiplayerStep] ?? 0;
+    const promptReaderPlayer = joinedPlayers[promptReaderIndex];
+    const promptReader = promptReaderPlayer?.player_name || "Player";
+    const isPromptReader = promptReaderPlayer?.id === myPlayerId;
+    const promptHasBeenRead =
+      multiplayerStep < 0 ||
+      multiplayerStep >= 10 ||
+      promptReadAloudStep === multiplayerStep ||
+      !currentPrompt;
+
     const activeJourney =
-  multiplayerJourneys[myPlayerIndex] ?? createEmptyJourney();
+      multiplayerJourneys[myPlayerIndex] ?? createEmptyJourney();
 
     const activeEmotionText =
       activeJourney.emotion === EMOTION_WILD_CARD_ID
@@ -1321,144 +1411,235 @@ const myPlayerIndex = joinedPlayers.findIndex(
     const activeResponseText =
       activeJourney.response === RESPONSE_WILD_CARD_ID
         ? activeJourney.customResponse
-        : responseCards.find((card) => card.id === activeJourney.response)?.title;
+        : responseCards.find((card) => card.id === activeJourney.response)
+            ?.title;
 
     const activeFinalBeliefText =
       activeJourney.finalBelief === BELIEF_WILD_CARD_ID
         ? activeJourney.customFinalBelief
-        : beliefCards.find((card) => card.id === activeJourney.finalBelief)?.title;
+        : beliefCards.find((card) => card.id === activeJourney.finalBelief)
+            ?.title;
 
     const activeFinalEmotionText =
       activeJourney.finalEmotion === EMOTION_WILD_CARD_ID
         ? activeJourney.customFinalEmotion
-        : emotionCards.find((card) => card.id === activeJourney.finalEmotion)?.title;
+        : emotionCards.find((card) => card.id === activeJourney.finalEmotion)
+            ?.title;
 
     const activeFinalResponseText =
       activeJourney.finalResponse === RESPONSE_WILD_CARD_ID
         ? activeJourney.customFinalResponse
-        : responseCards.find((card) => card.id === activeJourney.finalResponse)?.title;
+        : responseCards.find((card) => card.id === activeJourney.finalResponse)
+            ?.title;
 
     async function updateActiveJourney(updates: Partial<PlayerJourney>) {
-  if (myPlayerIndex < 0 || !myPlayerId || !roomCode) return;
+      if (myPlayerIndex < 0 || !myPlayerId || !roomCode) return;
 
-  const currentJourney = multiplayerJourneys[myPlayerIndex] ?? createEmptyJourney();
+      const currentJourney =
+        multiplayerJourneys[myPlayerIndex] ?? createEmptyJourney();
 
-  const updatedJourney = {
-    ...currentJourney,
-    ...updates,
-  };
+      const updatedJourney = {
+        ...currentJourney,
+        ...updates,
+      };
 
-  setMultiplayerJourneys((journeys) => {
-    const nextJourneys = joinedPlayers.map((_, index) => {
-      return journeys[index] ?? createEmptyJourney();
-    });
+      setMultiplayerJourneys((journeys) => {
+        const nextJourneys = joinedPlayers.map((_, index) => {
+          return journeys[index] ?? createEmptyJourney();
+        });
 
-    nextJourneys[myPlayerIndex] = updatedJourney;
+        nextJourneys[myPlayerIndex] = updatedJourney;
 
-    return nextJourneys;
-  });
+        return nextJourneys;
+      });
 
-  const { error } = await supabase.from("player_journeys").upsert(
-    {
-      room_code: roomCode,
-      player_id: myPlayerId,
-      journey: updatedJourney,
-      updated_at: new Date().toISOString(),
-    },
-    {
-      onConflict: "room_code,player_id",
+      const { error } = await supabase.from("player_journeys").upsert(
+        {
+          room_code: roomCode,
+          player_id: myPlayerId,
+          journey: updatedJourney,
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: "room_code,player_id",
+        },
+      );
+      if (error) {
+      }
     }
-  );
-  if (error) {
-  }
-}
 
     const journeysReady =
-      joinedPlayers.length > 0 && multiplayerJourneys.length === joinedPlayers.length;
+      joinedPlayers.length > 0 &&
+      multiplayerJourneys.length === joinedPlayers.length;
 
-    const allPlayersChoseEmotion = journeysReady && multiplayerJourneys.every(
-      (journey) =>
-        journey.emotion &&
-        (journey.emotion !== EMOTION_WILD_CARD_ID ||
-          journey.customEmotion.trim().length > 0)
-    );
+    const allPlayersChoseEmotion =
+      journeysReady &&
+      multiplayerJourneys.every(
+        (journey) =>
+          journey.emotion &&
+          (journey.emotion !== EMOTION_WILD_CARD_ID ||
+            journey.customEmotion.trim().length > 0),
+      );
 
-    const allPlayersSharedSituation = journeysReady && multiplayerJourneys.every(
-      (journey) =>
-        journey.situationText.trim().length > 0 ||
-        journey.situationSharedAloud
-    );
+    const allPlayersSharedSituation =
+      journeysReady &&
+      multiplayerJourneys.every(
+        (journey) =>
+          journey.situationText.trim().length > 0 ||
+          journey.situationSharedAloud,
+      );
 
-    const allPlayersChoseBelief = journeysReady && multiplayerJourneys.every(
-      (journey) =>
-        journey.belief &&
-        (journey.belief !== BELIEF_WILD_CARD_ID ||
-          journey.customBelief.trim().length > 0)
-    );
+    const allPlayersChoseBelief =
+      journeysReady &&
+      multiplayerJourneys.every(
+        (journey) =>
+          journey.belief &&
+          (journey.belief !== BELIEF_WILD_CARD_ID ||
+            journey.customBelief.trim().length > 0),
+      );
 
-    const allPlayersDeclaredTimeline = journeysReady && multiplayerJourneys.every(
-      (journey) => journey.timelineDeclared
-    );
+    const allPlayersDeclaredTimeline =
+      journeysReady &&
+      multiplayerJourneys.every((journey) => journey.timelineDeclared);
 
-    const allPlayersChoseResponse = journeysReady && multiplayerJourneys.every(
-      (journey) =>
-        journey.response &&
-        (journey.response !== RESPONSE_WILD_CARD_ID ||
-          journey.customResponse.trim().length > 0) &&
-        (journey.responseReflection.trim().length > 0 ||
-          journey.responseSharedAloud)
-    );
+    const allPlayersChoseResponse =
+      journeysReady &&
+      multiplayerJourneys.every(
+        (journey) =>
+          journey.response &&
+          (journey.response !== RESPONSE_WILD_CARD_ID ||
+            journey.customResponse.trim().length > 0) &&
+          (journey.responseReflection.trim().length > 0 ||
+            journey.responseSharedAloud),
+      );
 
-    const allPlayersReadyForLevel2 = journeysReady && multiplayerJourneys.every(
-      (journey) => journey.readyForLevel2
-    );
+    const allPlayersReadyForLevel2 =
+      journeysReady &&
+      multiplayerJourneys.every((journey) => journey.readyForLevel2);
 
     const currentReceiver =
-  joinedPlayers[currentReceiverIndex]?.player_name || "Player";
+      joinedPlayers[currentReceiverIndex]?.player_name || "Player";
 
     const isActivePlayerReceiver = myPlayerIndex === currentReceiverIndex;
 
     const activePlayerOffer: BeliefOffer | undefined = beliefOffers.find(
-  (offer) =>
-    offer.receiverIndex === currentReceiverIndex &&
-    offer.giverIndex === myPlayerIndex
-);
+      (offer) =>
+        offer.receiverIndex === currentReceiverIndex &&
+        offer.giverIndex === myPlayerIndex,
+    );
 
     const offersForCurrentReceiver = beliefOffers.filter(
-      (offer) => offer.receiverIndex === currentReceiverIndex
+      (offer) => offer.receiverIndex === currentReceiverIndex,
     );
 
     const currentReceiverIsComplete =
-  offersForCurrentReceiver.length === joinedPlayers.length - 1;
+      offersForCurrentReceiver.length === joinedPlayers.length - 1;
 
-    const allPlayersRedeclaredTimeline = journeysReady && multiplayerJourneys.every(
-      (journey) =>
-        journey.finalBelief &&
-        (journey.finalBelief !== BELIEF_WILD_CARD_ID ||
-          journey.customFinalBelief.trim().length > 0) &&
-        journey.finalEmotion &&
-        (journey.finalEmotion !== EMOTION_WILD_CARD_ID ||
-          journey.customFinalEmotion.trim().length > 0) &&
-        journey.timelineRedeclared
-    );
+    const allPlayersRedeclaredTimeline =
+      journeysReady &&
+      multiplayerJourneys.every(
+        (journey) =>
+          journey.finalBelief &&
+          (journey.finalBelief !== BELIEF_WILD_CARD_ID ||
+            journey.customFinalBelief.trim().length > 0) &&
+          journey.finalEmotion &&
+          (journey.finalEmotion !== EMOTION_WILD_CARD_ID ||
+            journey.customFinalEmotion.trim().length > 0) &&
+          journey.timelineRedeclared,
+      );
 
-    const allPlayersChoseFinalResponse = journeysReady && multiplayerJourneys.every(
-      (journey) =>
-        journey.finalResponseConfirmed &&
-        journey.finalResponse &&
-        (journey.finalResponse !== RESPONSE_WILD_CARD_ID ||
-          journey.customFinalResponse.trim().length > 0)
-    );
+    const allPlayersChoseFinalResponse =
+      journeysReady &&
+      multiplayerJourneys.every(
+        (journey) =>
+          journey.finalResponseConfirmed &&
+          journey.finalResponse &&
+          (journey.finalResponse !== RESPONSE_WILD_CARD_ID ||
+            journey.customFinalResponse.trim().length > 0),
+      );
 
-    const allPlayersReflected = journeysReady && multiplayerJourneys.every(
-      (journey) =>
-        journey.reflectionText.trim().length > 0 ||
-        journey.reflectionSharedAloud
-    );
+    const allPlayersReflected =
+      journeysReady &&
+      multiplayerJourneys.every(
+        (journey) =>
+          journey.reflectionText.trim().length > 0 ||
+          journey.reflectionSharedAloud,
+      );
 
-   return (
-  <main style={pageStyle}>
-    <RoomCodeBadge />
+    function renderPromptIntroScreen() {
+      if (!currentPrompt) return null;
+
+      return (
+        <div
+          style={{
+            marginTop: "32px",
+            padding: "34px",
+            borderRadius: "28px",
+            background: "#fffdf8",
+            boxShadow: "0 12px 30px rgba(0,0,0,0.08)",
+          }}
+        >
+          <p
+            style={{
+              marginTop: 0,
+              marginBottom: "12px",
+              fontSize: "14px",
+              fontWeight: "bold",
+              letterSpacing: "0.16em",
+              textTransform: "uppercase",
+              color: "#0f766e",
+            }}
+          >
+            Read this aloud
+          </p>
+
+          <h2 style={{ marginTop: 0, fontSize: "34px", lineHeight: 1.15 }}>
+            {currentPrompt.title}
+          </h2>
+
+          <p style={{ fontSize: "18px", color: "#52606d", lineHeight: 1.7 }}>
+            Reader: <strong>{promptReader}</strong>
+          </p>
+
+          <div
+            style={{
+              marginTop: "24px",
+              padding: "28px",
+              borderRadius: "24px",
+              background: "rgba(255,255,255,0.8)",
+              fontSize: "26px",
+              lineHeight: 1.5,
+            }}
+          >
+            “{currentPrompt.prompt}”
+          </div>
+
+          {isPromptReader ? (
+            <button
+              onClick={async () => {
+                await updatePromptReadAloudStep(multiplayerStep);
+              }}
+              style={{
+                ...primaryButtonStyle,
+                marginTop: "28px",
+              }}
+            >
+              I have read this aloud
+            </button>
+          ) : (
+            <p
+              style={{ marginTop: "28px", color: "#52606d", fontSize: "17px" }}
+            >
+              Waiting for {promptReader} to read this aloud.
+            </p>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <main style={pageStyle}>
+        <RoomCodeBadge />
         <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
           <header
             style={{
@@ -1471,12 +1652,12 @@ const myPlayerIndex = joinedPlayers.findIndex(
             }}
           >
             <button
-  onClick={leaveRoom}
-  style={{
-    ...secondaryButtonStyle,
-    marginBottom: "18px",
-  }}
->
+              onClick={leaveRoom}
+              style={{
+                ...secondaryButtonStyle,
+                marginBottom: "18px",
+              }}
+            >
               ← Back to start
             </button>
 
@@ -1515,7 +1696,8 @@ const myPlayerIndex = joinedPlayers.findIndex(
                 color: "#52606d",
               }}
             >
-              Move through the reflection together. The host controls the pace while each player makes their own choices.
+              Move through the reflection together. The host controls the pace
+              while each player makes their own choices.
             </p>
           </header>
 
@@ -1524,625 +1706,214 @@ const myPlayerIndex = joinedPlayers.findIndex(
 
             {multiplayerStep === 10 && renderClosingScreen(true)}
 
-            {!showClosingScreen && multiplayerStep !== 10 && (
-              <>
-                <h2 style={{ fontSize: "30px", marginTop: 0 }}>
-                  Active Player: {activePlayer?.player_name || "Unknown Player"}
-                </h2>
+            {!showClosingScreen &&
+              multiplayerStep !== 10 &&
+              !promptHasBeenRead &&
+              renderPromptIntroScreen()}
 
-               
-              </>
-            )}
+            {!showClosingScreen &&
+              multiplayerStep !== 10 &&
+              promptHasBeenRead && (
+                <>
+                  <h2 style={{ fontSize: "30px", marginTop: 0 }}>
+                    Active Player:{" "}
+                    {activePlayer?.player_name || "Unknown Player"}
+                  </h2>
+                </>
+              )}
 
-            {!showClosingScreen && multiplayerStep === 0 && (
-              <div
-                style={{
-                  marginTop: "32px",
-                  padding: "26px",
-                  borderRadius: "24px",
-                  background: "#fffdf8",
-                  boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
-                }}
-              >
-                <StepHeader
-                  title="Step 1 — Emotion"
-                  label={`Multiplayer Step ${multiplayerStep + 1}`}
-                />
-
-                <p style={{ fontSize: "18px", lineHeight: 1.7, color: "#52606d" }}>
-                  <strong>{promptReader}</strong>, read this prompt aloud to
-                  the table: “What emotion feels most true right now or
-                  recently?”
-                </p>
-
+            {!showClosingScreen &&
+              promptHasBeenRead &&
+              multiplayerStep === 0 && (
                 <div
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-                    gap: "20px",
-                    marginTop: "24px",
+                    marginTop: "32px",
+                    padding: "26px",
+                    borderRadius: "24px",
+                    background: "#fffdf8",
+                    boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
                   }}
                 >
-                  {emotionCards.map((card) => (
-                    <button
-                      key={card.id}
-                      onClick={() =>
-                        updateActiveJourney({
-                          emotion: card.id,
-                          customEmotion:
-                            card.id === EMOTION_WILD_CARD_ID
-                              ? activeJourney.customEmotion
-                              : "",
-                        })
-                      }
-                      style={cardButtonStyle(activeJourney.emotion === card.id)}
-                    >
-                      <img
-                        src={card.image}
-                        alt={card.title}
-                        style={{ width: "100%", display: "block" }}
-                      />
-                    </button>
-                  ))}
-                </div>
+                  <StepHeader
+                    title="Step 1 — Emotion"
+                    label={`Multiplayer Step ${multiplayerStep + 1}`}
+                  />
 
-                {activeJourney.emotion === EMOTION_WILD_CARD_ID && (
+                  <p
+                    style={{
+                      fontSize: "18px",
+                      lineHeight: 1.7,
+                      color: "#52606d",
+                    }}
+                  >
+                    <strong>{promptReader}</strong>, read this prompt aloud to
+                    the table: “What emotion feels most true right now or
+                    recently?”
+                  </p>
+
                   <div
                     style={{
-                      marginTop: "28px",
-                      padding: "24px",
-                      borderRadius: "24px",
-                      background: "rgba(255,255,255,0.72)",
+                      display: "grid",
+                      gridTemplateColumns:
+                        "repeat(auto-fit, minmax(160px, 1fr))",
+                      gap: "20px",
+                      marginTop: "24px",
                     }}
                   >
-                    <h3 style={{ marginTop: 0 }}>Name your own emotion</h3>
-
-                    <textarea
-                      placeholder="What emotion are you feeling?"
-                      value={activeJourney.customEmotion}
-                      onChange={(e) =>
-                        updateActiveJourney({ customEmotion: e.target.value })
-                      }
-                      style={{
-                        width: "100%",
-                        minHeight: "100px",
-                        padding: "18px",
-                        borderRadius: "18px",
-                        border: "2px solid #d8d2c4",
-                        fontSize: "17px",
-                        resize: "vertical",
-                        background: "#fffdf8",
-                      }}
-                    />
+                    {emotionCards.map((card) => (
+                      <button
+                        key={card.id}
+                        onClick={() =>
+                          updateActiveJourney({
+                            emotion: card.id,
+                            customEmotion:
+                              card.id === EMOTION_WILD_CARD_ID
+                                ? activeJourney.customEmotion
+                                : "",
+                          })
+                        }
+                        style={cardButtonStyle(
+                          activeJourney.emotion === card.id,
+                        )}
+                      >
+                        <img
+                          src={card.image}
+                          alt={card.title}
+                          style={{ width: "100%", display: "block" }}
+                        />
+                      </button>
+                    ))}
                   </div>
-                )}
 
-                <StatusList
-                  title="Step 1 Status"
-                  players={joinedPlayers.map((player) => player.player_name)}
-                  done={(index) => {
-  const journey = multiplayerJourneys[index];
+                  {activeJourney.emotion === EMOTION_WILD_CARD_ID && (
+                    <div
+                      style={{
+                        marginTop: "28px",
+                        padding: "24px",
+                        borderRadius: "24px",
+                        background: "rgba(255,255,255,0.72)",
+                      }}
+                    >
+                      <h3 style={{ marginTop: 0 }}>Name your own emotion</h3>
 
-  if (!journey) return false;
-
-  return Boolean(
-    journey.emotion &&
-      (journey.emotion !== EMOTION_WILD_CARD_ID ||
-        journey.customEmotion.trim().length > 0)
-  );
-}}
-                />
-
-                <div style={{ marginTop: "24px" }}>
-                  {isHost && (
-                  <button
-                    onClick={async () => {
-  if (allPlayersChoseEmotion) await updateRoomStep(1);
-}}
-                    disabled={!allPlayersChoseEmotion}
-                    style={{
-                      ...primaryButtonStyle,
-                      opacity: allPlayersChoseEmotion ? 1 : 0.4,
-                      cursor: allPlayersChoseEmotion ? "pointer" : "not-allowed",
-                    }}
-                  >
-                    Continue when everyone is ready
-                  </button>
+                      <textarea
+                        placeholder="What emotion are you feeling?"
+                        value={activeJourney.customEmotion}
+                        onChange={(e) =>
+                          updateActiveJourney({ customEmotion: e.target.value })
+                        }
+                        style={{
+                          width: "100%",
+                          minHeight: "100px",
+                          padding: "18px",
+                          borderRadius: "18px",
+                          border: "2px solid #d8d2c4",
+                          fontSize: "17px",
+                          resize: "vertical",
+                          background: "#fffdf8",
+                        }}
+                      />
+                    </div>
                   )}
-                    {!isHost && (
-    <p style={{ color: "#52606d", fontSize: "16px" }}>
-      Waiting for the host to continue.
-    </p>
-  )}
-                </div>
-              </div>
-            )}
 
-            {!showClosingScreen && multiplayerStep === 1 && (
-              <div
-                style={{
-                  marginTop: "32px",
-                  padding: "26px",
-                  borderRadius: "24px",
-                  background: "#fffdf8",
-                  boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
-                }}
-              >
-                <StepHeader
-                  title="Step 2 — Situation"
-                  label={`Multiplayer Step ${multiplayerStep + 1}`}
-                />
+                  <StatusList
+                    title="Step 1 Status"
+                    players={joinedPlayers.map((player) => player.player_name)}
+                    done={(index) => {
+                      const journey = multiplayerJourneys[index];
 
-                <p style={{ fontSize: "18px", lineHeight: 1.7, color: "#52606d" }}>
-                  <strong>{promptReader}</strong>, read this prompt aloud to
-                  the table: “Describe what happened using facts only. Imagine
-                  reporting what a camera would have recorded.”
-                </p>
+                      if (!journey) return false;
 
-                <div
-                  style={{
-                    marginTop: "24px",
-                    padding: "22px",
-                    borderRadius: "22px",
-                    background: "rgba(255,255,255,0.75)",
-                  }}
-                >
-                  <p style={{ marginTop: 0, fontWeight: "bold" }}>
-                    Choose how you want to share:
-                  </p>
-
-                  <p style={{ color: "#52606d", lineHeight: 1.6 }}>
-                    Type your situation below, or mark it as shared aloud if you
-                    are playing in person.
-                  </p>
-
-                  <textarea
-                    placeholder="Optional: type what happened here..."
-                    value={activeJourney.situationText}
-                    onChange={(e) =>
-                      updateActiveJourney({ situationText: e.target.value })
-                    }
-                    style={{
-                      width: "100%",
-                      minHeight: "150px",
-                      padding: "18px",
-                      borderRadius: "18px",
-                      border: "2px solid #d8d2c4",
-                      fontSize: "17px",
-                      resize: "vertical",
-                      background: "#fffdf8",
+                      return Boolean(
+                        journey.emotion &&
+                        (journey.emotion !== EMOTION_WILD_CARD_ID ||
+                          journey.customEmotion.trim().length > 0),
+                      );
                     }}
                   />
 
-                  <button
-                    onClick={() =>
-                      updateActiveJourney({
-                        situationSharedAloud:
-                          !activeJourney.situationSharedAloud,
-                      })
-                    }
-                    style={{
-                      marginTop: "18px",
-                      padding: "12px 18px",
-                      borderRadius: "999px",
-                      border: activeJourney.situationSharedAloud
-                        ? "2px solid #0f766e"
-                        : "2px solid #d8d2c4",
-                      background: activeJourney.situationSharedAloud
-                        ? "#ccfbf1"
-                        : "#fffdf8",
-                      color: activeJourney.situationSharedAloud
-                        ? "#115e59"
-                        : "#52606d",
-                      fontWeight: "bold",
-                      cursor: "pointer",
-                    }}
-                  >
-                    {activeJourney.situationSharedAloud
-                      ? "✓ Shared aloud"
-                      : "I shared this aloud"}
-                  </button>
-                </div>
-
-                <StatusList
-                  title="Step 2 Status"
-                  players={joinedPlayers.map((player) => player.player_name)}
-                  done={(index) => {
-                    const journey = multiplayerJourneys[index];
-                     if (!journey) return false;
-                    return (
-                      journey.situationText.trim().length > 0 ||
-                      journey.situationSharedAloud
-                    );
-                  }}
-                />
-
-                <div style={{ marginTop: "24px" }}>
-  {isHost ? (
-    <>
-      <button
-        onClick={async () => await updateRoomStep(0)}
-        style={{ ...secondaryButtonStyle, marginRight: "12px" }}
-      >
-        Back
-      </button>
-
-      <button
-        onClick={async () => {
-          if (allPlayersSharedSituation) await updateRoomStep(2);
-        }}
-        disabled={!allPlayersSharedSituation}
-        style={{
-          ...primaryButtonStyle,
-          opacity: allPlayersSharedSituation ? 1 : 0.4,
-          cursor: allPlayersSharedSituation ? "pointer" : "not-allowed",
-        }}
-      >
-        Continue when everyone is ready
-      </button>
-    </>
-  ) : (
-    <p style={{ color: "#52606d", fontSize: "16px" }}>
-      Waiting for the host to continue.
-    </p>
-  )}
-</div>
-              </div>
-            )}
-
-            {!showClosingScreen && multiplayerStep === 2 && (
-              <div
-                style={{
-                  marginTop: "32px",
-                  padding: "26px",
-                  borderRadius: "24px",
-                  background: "#fffdf8",
-                  boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
-                }}
-              >
-                <StepHeader
-                  title="Step 3 — Belief"
-                  label={`Multiplayer Step ${multiplayerStep + 1}`}
-                />
-
-                <p style={{ fontSize: "18px", lineHeight: 1.7, color: "#52606d" }}>
-                  <strong>{promptReader}</strong>, read this prompt aloud to
-                  the table: “What belief might be beneath the story you’re
-                  telling yourself about what happened?”
-                </p>
-
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-                    gap: "20px",
-                    marginTop: "24px",
-                  }}
-                >
-                  {beliefCards.map((card) => (
-                    <button
-                      key={card.id}
-                      onClick={() =>
-                        updateActiveJourney({
-                          belief: card.id,
-                          customBelief:
-                            card.id === BELIEF_WILD_CARD_ID
-                              ? activeJourney.customBelief
-                              : "",
-                        })
-                      }
-                      style={cardButtonStyle(activeJourney.belief === card.id)}
-                    >
-                      <img
-                        src={card.image}
-                        alt={card.title}
-                        style={{ width: "100%", display: "block" }}
-                      />
-                    </button>
-                  ))}
-                </div>
-
-                {activeJourney.belief === BELIEF_WILD_CARD_ID && (
-                  <div
-                    style={{
-                      marginTop: "28px",
-                      padding: "24px",
-                      borderRadius: "24px",
-                      background: "rgba(255,255,255,0.72)",
-                    }}
-                  >
-                    <h3 style={{ marginTop: 0 }}>Name your own belief</h3>
-
-                    <textarea
-                      placeholder="What story are you telling yourself?"
-                      value={activeJourney.customBelief}
-                      onChange={(e) =>
-                        updateActiveJourney({ customBelief: e.target.value })
-                      }
-                      style={{
-                        width: "100%",
-                        minHeight: "120px",
-                        padding: "18px",
-                        borderRadius: "18px",
-                        border: "2px solid #d8d2c4",
-                        fontSize: "17px",
-                        resize: "vertical",
-                        background: "#fffdf8",
-                      }}
-                    />
+                  <div style={{ marginTop: "24px" }}>
+                    {isHost && (
+                      <button
+                        onClick={async () => {
+                          if (allPlayersChoseEmotion) await updateRoomStep(1);
+                        }}
+                        disabled={!allPlayersChoseEmotion}
+                        style={{
+                          ...primaryButtonStyle,
+                          opacity: allPlayersChoseEmotion ? 1 : 0.4,
+                          cursor: allPlayersChoseEmotion
+                            ? "pointer"
+                            : "not-allowed",
+                        }}
+                      >
+                        Continue when everyone is ready
+                      </button>
+                    )}
+                    {!isHost && (
+                      <p style={{ color: "#52606d", fontSize: "16px" }}>
+                        Waiting for the host to continue.
+                      </p>
+                    )}
                   </div>
-                )}
+                </div>
+              )}
 
-                <StatusList
-                  title="Step 3 Status"
-                  players={joinedPlayers.map((player) => player.player_name)}
-                  done={(index) => {
-                    const journey = multiplayerJourneys[index];
-                     if (!journey) return false;
-                    return Boolean(
-                      journey.belief &&
-                        (journey.belief !== BELIEF_WILD_CARD_ID ||
-                          journey.customBelief.trim().length > 0)
-                    );
-                  }}
-                />
-
-                <div style={{ marginTop: "24px" }}>
-  {isHost ? (
-    <>
-      <button
-        onClick={async () => await updateRoomStep(1)}
-        style={{ ...secondaryButtonStyle, marginRight: "12px" }}
-      >
-        Back
-      </button>
-
-      <button
-        onClick={async () => {
-          if (allPlayersChoseBelief) await updateRoomStep(3);
-        }}
-        disabled={!allPlayersChoseBelief}
-        style={{
-          ...primaryButtonStyle,
-          opacity: allPlayersChoseBelief ? 1 : 0.4,
-          cursor: allPlayersChoseBelief ? "pointer" : "not-allowed",
-        }}
-      >
-        Continue when everyone is ready
-      </button>
-    </>
-  ) : (
-    <p style={{ color: "#52606d", fontSize: "16px" }}>
-      Waiting for the host to continue.
-    </p>
-  )}
-</div>
-              </div>
-            )}
-
-            {!showClosingScreen && multiplayerStep === 3 && (
-              <div
-                style={{
-                  marginTop: "32px",
-                  padding: "26px",
-                  borderRadius: "24px",
-                  background: "#fffdf8",
-                  boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
-                }}
-              >
-                <StepHeader
-                  title="Step 4 — Declare the Timeline"
-                  label={`Multiplayer Step ${multiplayerStep + 1}`}
-                />
-
-                <p style={{ fontSize: "18px", lineHeight: 1.7, color: "#52606d" }}>
-                  <strong>{promptReader}</strong>, read this prompt aloud to
-                  the table: “Take turns to declare your timeline aloud.”
-                </p>
-
+            {!showClosingScreen &&
+              promptHasBeenRead &&
+              multiplayerStep === 1 && (
                 <div
                   style={{
-                    marginTop: "28px",
-                    padding: "30px",
-                    borderRadius: "28px",
-                    background: "rgba(255,255,255,0.82)",
-                    boxShadow: "0 12px 30px rgba(0,0,0,0.08)",
-                    fontSize: "26px",
-                    lineHeight: 1.5,
+                    marginTop: "32px",
+                    padding: "26px",
+                    borderRadius: "24px",
+                    background: "#fffdf8",
+                    boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
                   }}
                 >
-                  <span style={{ color: "#777" }}>When </span>
-                  <strong>
-                    {activeJourney.situationText || "[the situation happened]"}
-                  </strong>
-                  <span style={{ color: "#777" }}> , I told myself </span>
-                  <strong>{activeBeliefText}</strong>
-                  <span style={{ color: "#777" }}> , so I felt </span>
-                  <strong>{activeEmotionText}</strong>
-                  <span>.</span>
-                </div>
+                  <StepHeader
+                    title="Step 2 — Situation"
+                    label={`Multiplayer Step ${multiplayerStep + 1}`}
+                  />
 
-                <button
-                  onClick={() =>
-                    updateActiveJourney({
-                      timelineDeclared: !activeJourney.timelineDeclared,
-                    })
-                  }
-                  style={{
-                    marginTop: "24px",
-                    padding: "12px 18px",
-                    borderRadius: "999px",
-                    border: activeJourney.timelineDeclared
-                      ? "2px solid #0f766e"
-                      : "2px solid #d8d2c4",
-                    background: activeJourney.timelineDeclared
-                      ? "#ccfbf1"
-                      : "#fffdf8",
-                    color: activeJourney.timelineDeclared
-                      ? "#115e59"
-                      : "#52606d",
-                    fontWeight: "bold",
-                    cursor: "pointer",
-                  }}
-                >
-                  {activeJourney.timelineDeclared
-                    ? "✓ Timeline declared"
-                    : "I have declared this aloud"}
-                </button>
-
-                <StatusList
-                  title="Step 4 Status"
-                  players={joinedPlayers.map((player) => player.player_name)}
-                  done={(index) =>
-                    Boolean(multiplayerJourneys[index]?.timelineDeclared)
-                  }
-                />
-
-                <div style={{ marginTop: "24px" }}>
-  {isHost ? (
-    <>
-      <button
-        onClick={async () => await updateRoomStep(2)}
-        style={{ ...secondaryButtonStyle, marginRight: "12px" }}
-      >
-        Back
-      </button>
-
-      <button
-        onClick={async () => {
-          if (allPlayersDeclaredTimeline) await updateRoomStep(4);
-        }}
-        disabled={!allPlayersDeclaredTimeline}
-        style={{
-          ...primaryButtonStyle,
-          opacity: allPlayersDeclaredTimeline ? 1 : 0.4,
-          cursor: allPlayersDeclaredTimeline ? "pointer" : "not-allowed",
-        }}
-      >
-        Continue when everyone is ready
-      </button>
-    </>
-  ) : (
-    <p style={{ color: "#52606d", fontSize: "16px" }}>
-      Waiting for the host to continue.
-    </p>
-  )}
-</div>
-              </div>
-            )}
-
-            {!showClosingScreen && multiplayerStep === 4 && (
-              <div
-                style={{
-                  marginTop: "32px",
-                  padding: "26px",
-                  borderRadius: "24px",
-                  background: "#fffdf8",
-                  boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
-                }}
-              >
-                <StepHeader
-                  title="Step 5 — Response"
-                  label={`Multiplayer Step ${multiplayerStep + 1}`}
-                />
-
-                <p style={{ fontSize: "18px", lineHeight: 1.7, color: "#52606d" }}>
-                  <strong>{promptReader}</strong>, read this prompt aloud to
-                  the table: “What is one response you are willing to try?”
-                </p>
-
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-                    gap: "20px",
-                    marginTop: "24px",
-                  }}
-                >
-                  {responseCards.map((card) => (
-                    <button
-                      key={card.id}
-                      onClick={() =>
-                        updateActiveJourney({
-                          response: card.id,
-                          customResponse:
-                            card.id === RESPONSE_WILD_CARD_ID
-                              ? activeJourney.customResponse
-                              : "",
-                        })
-                      }
-                      style={cardButtonStyle(activeJourney.response === card.id)}
-                    >
-                      <img
-                        src={card.image}
-                        alt={card.title}
-                        style={{ width: "100%", display: "block" }}
-                      />
-                    </button>
-                  ))}
-                </div>
-
-                {activeJourney.response === RESPONSE_WILD_CARD_ID && (
-                  <div
+                  <p
                     style={{
-                      marginTop: "28px",
-                      padding: "24px",
-                      borderRadius: "24px",
-                      background: "rgba(255,255,255,0.72)",
-                      maxWidth: "760px",
+                      fontSize: "18px",
+                      lineHeight: 1.7,
+                      color: "#52606d",
                     }}
                   >
-                    <h3 style={{ marginTop: 0 }}>Name your own response</h3>
+                    <strong>{promptReader}</strong>, read this prompt aloud to
+                    the table: “Describe what happened using facts only. Imagine
+                    reporting what a camera would have recorded.”
+                  </p>
 
-                    <textarea
-                      placeholder="What response are you willing to try?"
-                      value={activeJourney.customResponse}
-                      onChange={(e) =>
-                        updateActiveJourney({ customResponse: e.target.value })
-                      }
-                      style={{
-                        width: "100%",
-                        minHeight: "120px",
-                        padding: "18px",
-                        borderRadius: "18px",
-                        border: "2px solid #d8d2c4",
-                        fontSize: "17px",
-                        resize: "vertical",
-                        background: "#fffdf8",
-                      }}
-                    />
-                  </div>
-                )}
-
-                {activeJourney.response && (
                   <div
                     style={{
-                      marginTop: "28px",
-                      padding: "24px",
-                      borderRadius: "24px",
+                      marginTop: "24px",
+                      padding: "22px",
+                      borderRadius: "22px",
                       background: "rgba(255,255,255,0.75)",
                     }}
                   >
                     <p style={{ marginTop: 0, fontWeight: "bold" }}>
-                      Share about this response
+                      Choose how you want to share:
                     </p>
 
                     <p style={{ color: "#52606d", lineHeight: 1.6 }}>
-                      You may type about this response, or simply share it
-                      aloud.
+                      Type your situation below, or mark it as shared aloud if
+                      you are playing in person.
                     </p>
 
                     <textarea
-                      placeholder="Optional: What draws you to this response?"
-                      value={activeJourney.responseReflection}
+                      placeholder="Optional: type what happened here..."
+                      value={activeJourney.situationText}
                       onChange={(e) =>
-                        updateActiveJourney({
-                          responseReflection: e.target.value,
-                        })
+                        updateActiveJourney({ situationText: e.target.value })
                       }
                       style={{
                         width: "100%",
-                        minHeight: "130px",
+                        minHeight: "150px",
                         padding: "18px",
                         borderRadius: "18px",
                         border: "2px solid #d8d2c4",
@@ -2155,873 +1926,1691 @@ const myPlayerIndex = joinedPlayers.findIndex(
                     <button
                       onClick={() =>
                         updateActiveJourney({
-                          responseSharedAloud:
-                            !activeJourney.responseSharedAloud,
+                          situationSharedAloud:
+                            !activeJourney.situationSharedAloud,
                         })
                       }
                       style={{
                         marginTop: "18px",
                         padding: "12px 18px",
                         borderRadius: "999px",
-                        border: activeJourney.responseSharedAloud
+                        border: activeJourney.situationSharedAloud
                           ? "2px solid #0f766e"
                           : "2px solid #d8d2c4",
-                        background: activeJourney.responseSharedAloud
+                        background: activeJourney.situationSharedAloud
                           ? "#ccfbf1"
                           : "#fffdf8",
-                        color: activeJourney.responseSharedAloud
+                        color: activeJourney.situationSharedAloud
                           ? "#115e59"
                           : "#52606d",
                         fontWeight: "bold",
                         cursor: "pointer",
                       }}
                     >
-                      {activeJourney.responseSharedAloud
+                      {activeJourney.situationSharedAloud
                         ? "✓ Shared aloud"
                         : "I shared this aloud"}
                     </button>
                   </div>
-                )}
 
-                <StatusList
-                  title="Step 5 Status"
-                  players={joinedPlayers.map((player) => player.player_name)}
-                  done={(index) => {
-                    const journey = multiplayerJourneys[index];
-                     if (!journey) return false;
-                    return Boolean(
-                      journey.response &&
+                  <StatusList
+                    title="Step 2 Status"
+                    players={joinedPlayers.map((player) => player.player_name)}
+                    done={(index) => {
+                      const journey = multiplayerJourneys[index];
+                      if (!journey) return false;
+                      return (
+                        journey.situationText.trim().length > 0 ||
+                        journey.situationSharedAloud
+                      );
+                    }}
+                  />
+
+                  <div style={{ marginTop: "24px" }}>
+                    {isHost ? (
+                      <>
+                        <button
+                          onClick={async () => await updateRoomStep(0)}
+                          style={{
+                            ...secondaryButtonStyle,
+                            marginRight: "12px",
+                          }}
+                        >
+                          Back
+                        </button>
+
+                        <button
+                          onClick={async () => {
+                            if (allPlayersSharedSituation)
+                              await updateRoomStep(2);
+                          }}
+                          disabled={!allPlayersSharedSituation}
+                          style={{
+                            ...primaryButtonStyle,
+                            opacity: allPlayersSharedSituation ? 1 : 0.4,
+                            cursor: allPlayersSharedSituation
+                              ? "pointer"
+                              : "not-allowed",
+                          }}
+                        >
+                          Continue when everyone is ready
+                        </button>
+                      </>
+                    ) : (
+                      <p style={{ color: "#52606d", fontSize: "16px" }}>
+                        Waiting for the host to continue.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+            {!showClosingScreen &&
+              promptHasBeenRead &&
+              multiplayerStep === 2 && (
+                <div
+                  style={{
+                    marginTop: "32px",
+                    padding: "26px",
+                    borderRadius: "24px",
+                    background: "#fffdf8",
+                    boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
+                  }}
+                >
+                  <StepHeader
+                    title="Step 3 — Belief"
+                    label={`Multiplayer Step ${multiplayerStep + 1}`}
+                  />
+
+                  <p
+                    style={{
+                      fontSize: "18px",
+                      lineHeight: 1.7,
+                      color: "#52606d",
+                    }}
+                  >
+                    <strong>{promptReader}</strong>, read this prompt aloud to
+                    the table: “What belief might be beneath the story you’re
+                    telling yourself about what happened?”
+                  </p>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns:
+                        "repeat(auto-fit, minmax(160px, 1fr))",
+                      gap: "20px",
+                      marginTop: "24px",
+                    }}
+                  >
+                    {beliefCards.map((card) => (
+                      <button
+                        key={card.id}
+                        onClick={() =>
+                          updateActiveJourney({
+                            belief: card.id,
+                            customBelief:
+                              card.id === BELIEF_WILD_CARD_ID
+                                ? activeJourney.customBelief
+                                : "",
+                          })
+                        }
+                        style={cardButtonStyle(
+                          activeJourney.belief === card.id,
+                        )}
+                      >
+                        <img
+                          src={card.image}
+                          alt={card.title}
+                          style={{ width: "100%", display: "block" }}
+                        />
+                      </button>
+                    ))}
+                  </div>
+
+                  {activeJourney.belief === BELIEF_WILD_CARD_ID && (
+                    <div
+                      style={{
+                        marginTop: "28px",
+                        padding: "24px",
+                        borderRadius: "24px",
+                        background: "rgba(255,255,255,0.72)",
+                      }}
+                    >
+                      <h3 style={{ marginTop: 0 }}>Name your own belief</h3>
+
+                      <textarea
+                        placeholder="What story are you telling yourself?"
+                        value={activeJourney.customBelief}
+                        onChange={(e) =>
+                          updateActiveJourney({ customBelief: e.target.value })
+                        }
+                        style={{
+                          width: "100%",
+                          minHeight: "120px",
+                          padding: "18px",
+                          borderRadius: "18px",
+                          border: "2px solid #d8d2c4",
+                          fontSize: "17px",
+                          resize: "vertical",
+                          background: "#fffdf8",
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  <StatusList
+                    title="Step 3 Status"
+                    players={joinedPlayers.map((player) => player.player_name)}
+                    done={(index) => {
+                      const journey = multiplayerJourneys[index];
+                      if (!journey) return false;
+                      return Boolean(
+                        journey.belief &&
+                        (journey.belief !== BELIEF_WILD_CARD_ID ||
+                          journey.customBelief.trim().length > 0),
+                      );
+                    }}
+                  />
+
+                  <div style={{ marginTop: "24px" }}>
+                    {isHost ? (
+                      <>
+                        <button
+                          onClick={async () => await updateRoomStep(1)}
+                          style={{
+                            ...secondaryButtonStyle,
+                            marginRight: "12px",
+                          }}
+                        >
+                          Back
+                        </button>
+
+                        <button
+                          onClick={async () => {
+                            if (allPlayersChoseBelief) await updateRoomStep(3);
+                          }}
+                          disabled={!allPlayersChoseBelief}
+                          style={{
+                            ...primaryButtonStyle,
+                            opacity: allPlayersChoseBelief ? 1 : 0.4,
+                            cursor: allPlayersChoseBelief
+                              ? "pointer"
+                              : "not-allowed",
+                          }}
+                        >
+                          Continue when everyone is ready
+                        </button>
+                      </>
+                    ) : (
+                      <p style={{ color: "#52606d", fontSize: "16px" }}>
+                        Waiting for the host to continue.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+            {!showClosingScreen &&
+              promptHasBeenRead &&
+              multiplayerStep === 3 && (
+                <div
+                  style={{
+                    marginTop: "32px",
+                    padding: "26px",
+                    borderRadius: "24px",
+                    background: "#fffdf8",
+                    boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
+                  }}
+                >
+                  <StepHeader
+                    title="Step 4 — Declare the Timeline"
+                    label={`Multiplayer Step ${multiplayerStep + 1}`}
+                  />
+
+                  <p
+                    style={{
+                      fontSize: "18px",
+                      lineHeight: 1.7,
+                      color: "#52606d",
+                    }}
+                  >
+                    <strong>{promptReader}</strong>, read this prompt aloud to
+                    the table: “Take turns to declare your timeline aloud.”
+                  </p>
+
+                  <div
+                    style={{
+                      marginTop: "28px",
+                      padding: "30px",
+                      borderRadius: "28px",
+                      background: "rgba(255,255,255,0.82)",
+                      boxShadow: "0 12px 30px rgba(0,0,0,0.08)",
+                      fontSize: "26px",
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    <span style={{ color: "#777" }}>When </span>
+                    <strong>
+                      {activeJourney.situationText ||
+                        "[the situation happened]"}
+                    </strong>
+                    <span style={{ color: "#777" }}> , I told myself </span>
+                    <strong>{activeBeliefText}</strong>
+                    <span style={{ color: "#777" }}> , so I felt </span>
+                    <strong>{activeEmotionText}</strong>
+                    <span>.</span>
+                  </div>
+
+                  <button
+                    onClick={() =>
+                      updateActiveJourney({
+                        timelineDeclared: !activeJourney.timelineDeclared,
+                      })
+                    }
+                    style={{
+                      marginTop: "24px",
+                      padding: "12px 18px",
+                      borderRadius: "999px",
+                      border: activeJourney.timelineDeclared
+                        ? "2px solid #0f766e"
+                        : "2px solid #d8d2c4",
+                      background: activeJourney.timelineDeclared
+                        ? "#ccfbf1"
+                        : "#fffdf8",
+                      color: activeJourney.timelineDeclared
+                        ? "#115e59"
+                        : "#52606d",
+                      fontWeight: "bold",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {activeJourney.timelineDeclared
+                      ? "✓ Timeline declared"
+                      : "I have declared this aloud"}
+                  </button>
+
+                  <StatusList
+                    title="Step 4 Status"
+                    players={joinedPlayers.map((player) => player.player_name)}
+                    done={(index) =>
+                      Boolean(multiplayerJourneys[index]?.timelineDeclared)
+                    }
+                  />
+
+                  <div style={{ marginTop: "24px" }}>
+                    {isHost ? (
+                      <>
+                        <button
+                          onClick={async () => await updateRoomStep(2)}
+                          style={{
+                            ...secondaryButtonStyle,
+                            marginRight: "12px",
+                          }}
+                        >
+                          Back
+                        </button>
+
+                        <button
+                          onClick={async () => {
+                            if (allPlayersDeclaredTimeline)
+                              await updateRoomStep(4);
+                          }}
+                          disabled={!allPlayersDeclaredTimeline}
+                          style={{
+                            ...primaryButtonStyle,
+                            opacity: allPlayersDeclaredTimeline ? 1 : 0.4,
+                            cursor: allPlayersDeclaredTimeline
+                              ? "pointer"
+                              : "not-allowed",
+                          }}
+                        >
+                          Continue when everyone is ready
+                        </button>
+                      </>
+                    ) : (
+                      <p style={{ color: "#52606d", fontSize: "16px" }}>
+                        Waiting for the host to continue.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+            {!showClosingScreen &&
+              promptHasBeenRead &&
+              multiplayerStep === 4 && (
+                <div
+                  style={{
+                    marginTop: "32px",
+                    padding: "26px",
+                    borderRadius: "24px",
+                    background: "#fffdf8",
+                    boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
+                  }}
+                >
+                  <StepHeader
+                    title="Step 5 — Response"
+                    label={`Multiplayer Step ${multiplayerStep + 1}`}
+                  />
+
+                  <p
+                    style={{
+                      fontSize: "18px",
+                      lineHeight: 1.7,
+                      color: "#52606d",
+                    }}
+                  >
+                    <strong>{promptReader}</strong>, read this prompt aloud to
+                    the table: “What is one response you are willing to try?”
+                  </p>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns:
+                        "repeat(auto-fit, minmax(160px, 1fr))",
+                      gap: "20px",
+                      marginTop: "24px",
+                    }}
+                  >
+                    {responseCards.map((card) => (
+                      <button
+                        key={card.id}
+                        onClick={() =>
+                          updateActiveJourney({
+                            response: card.id,
+                            customResponse:
+                              card.id === RESPONSE_WILD_CARD_ID
+                                ? activeJourney.customResponse
+                                : "",
+                          })
+                        }
+                        style={cardButtonStyle(
+                          activeJourney.response === card.id,
+                        )}
+                      >
+                        <img
+                          src={card.image}
+                          alt={card.title}
+                          style={{ width: "100%", display: "block" }}
+                        />
+                      </button>
+                    ))}
+                  </div>
+
+                  {activeJourney.response === RESPONSE_WILD_CARD_ID && (
+                    <div
+                      style={{
+                        marginTop: "28px",
+                        padding: "24px",
+                        borderRadius: "24px",
+                        background: "rgba(255,255,255,0.72)",
+                        maxWidth: "760px",
+                      }}
+                    >
+                      <h3 style={{ marginTop: 0 }}>Name your own response</h3>
+
+                      <textarea
+                        placeholder="What response are you willing to try?"
+                        value={activeJourney.customResponse}
+                        onChange={(e) =>
+                          updateActiveJourney({
+                            customResponse: e.target.value,
+                          })
+                        }
+                        style={{
+                          width: "100%",
+                          minHeight: "120px",
+                          padding: "18px",
+                          borderRadius: "18px",
+                          border: "2px solid #d8d2c4",
+                          fontSize: "17px",
+                          resize: "vertical",
+                          background: "#fffdf8",
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  {activeJourney.response && (
+                    <div
+                      style={{
+                        marginTop: "28px",
+                        padding: "24px",
+                        borderRadius: "24px",
+                        background: "rgba(255,255,255,0.75)",
+                      }}
+                    >
+                      <p style={{ marginTop: 0, fontWeight: "bold" }}>
+                        Share about this response
+                      </p>
+
+                      <p style={{ color: "#52606d", lineHeight: 1.6 }}>
+                        You may type about this response, or simply share it
+                        aloud.
+                      </p>
+
+                      <textarea
+                        placeholder="Optional: What draws you to this response?"
+                        value={activeJourney.responseReflection}
+                        onChange={(e) =>
+                          updateActiveJourney({
+                            responseReflection: e.target.value,
+                          })
+                        }
+                        style={{
+                          width: "100%",
+                          minHeight: "130px",
+                          padding: "18px",
+                          borderRadius: "18px",
+                          border: "2px solid #d8d2c4",
+                          fontSize: "17px",
+                          resize: "vertical",
+                          background: "#fffdf8",
+                        }}
+                      />
+
+                      <button
+                        onClick={() =>
+                          updateActiveJourney({
+                            responseSharedAloud:
+                              !activeJourney.responseSharedAloud,
+                          })
+                        }
+                        style={{
+                          marginTop: "18px",
+                          padding: "12px 18px",
+                          borderRadius: "999px",
+                          border: activeJourney.responseSharedAloud
+                            ? "2px solid #0f766e"
+                            : "2px solid #d8d2c4",
+                          background: activeJourney.responseSharedAloud
+                            ? "#ccfbf1"
+                            : "#fffdf8",
+                          color: activeJourney.responseSharedAloud
+                            ? "#115e59"
+                            : "#52606d",
+                          fontWeight: "bold",
+                          cursor: "pointer",
+                        }}
+                      >
+                        {activeJourney.responseSharedAloud
+                          ? "✓ Shared aloud"
+                          : "I shared this aloud"}
+                      </button>
+                    </div>
+                  )}
+
+                  <StatusList
+                    title="Step 5 Status"
+                    players={joinedPlayers.map((player) => player.player_name)}
+                    done={(index) => {
+                      const journey = multiplayerJourneys[index];
+                      if (!journey) return false;
+                      return Boolean(
+                        journey.response &&
                         (journey.response !== RESPONSE_WILD_CARD_ID ||
                           journey.customResponse.trim().length > 0) &&
                         (journey.responseReflection.trim().length > 0 ||
-                          journey.responseSharedAloud)
-                    );
-                  }}
-                />
+                          journey.responseSharedAloud),
+                      );
+                    }}
+                  />
 
-                <div style={{ marginTop: "24px" }}>
-  {isHost ? (
-    <>
-      <button
-        onClick={async () => await updateRoomStep(3)}
-        style={{ ...secondaryButtonStyle, marginRight: "12px" }}
-      >
-        Back
-      </button>
+                  <div style={{ marginTop: "24px" }}>
+                    {isHost ? (
+                      <>
+                        <button
+                          onClick={async () => await updateRoomStep(3)}
+                          style={{
+                            ...secondaryButtonStyle,
+                            marginRight: "12px",
+                          }}
+                        >
+                          Back
+                        </button>
 
-      <button
-        onClick={async () => {
-          if (allPlayersChoseResponse) await updateRoomStep(5);
-        }}
-        disabled={!allPlayersChoseResponse}
-        style={{
-          ...primaryButtonStyle,
-          opacity: allPlayersChoseResponse ? 1 : 0.4,
-          cursor: allPlayersChoseResponse ? "pointer" : "not-allowed",
-        }}
-      >
-        Complete Level 1 together
-      </button>
-    </>
-  ) : (
-    <p style={{ color: "#52606d", fontSize: "16px" }}>
-      Waiting for the host to continue.
-    </p>
-  )}
-</div>
-              </div>
-            )}
+                        <button
+                          onClick={async () => {
+                            if (allPlayersChoseResponse)
+                              await updateRoomStep(5);
+                          }}
+                          disabled={!allPlayersChoseResponse}
+                          style={{
+                            ...primaryButtonStyle,
+                            opacity: allPlayersChoseResponse ? 1 : 0.4,
+                            cursor: allPlayersChoseResponse
+                              ? "pointer"
+                              : "not-allowed",
+                          }}
+                        >
+                          Complete Level 1 together
+                        </button>
+                      </>
+                    ) : (
+                      <p style={{ color: "#52606d", fontSize: "16px" }}>
+                        Waiting for the host to continue.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
 
-            {!showClosingScreen && multiplayerStep === 5 && (
-              <div
-                style={{
-                  marginTop: "32px",
-                  padding: "30px",
-                  borderRadius: "28px",
-                  background: "#fffdf8",
-                  boxShadow: "0 12px 30px rgba(0,0,0,0.08)",
-                }}
-              >
-                <h2 style={{ fontSize: "30px", marginTop: 0 }}>
-                  Level 1 Complete
-                </h2>
-
-                <p style={{ fontSize: "24px", lineHeight: 1.5, marginTop: 0 }}>
-                  You have each named what you felt, noticed the stories you
-                  were carrying, and chosen a response with intention.
-                </p>
-
-                <p style={{ fontSize: "18px", lineHeight: 1.7, color: "#52606d" }}>
-                  That is already meaningful work. Level 2 invites the group to
-                  gently explore other possible beliefs, not to force anyone to
-                  feel differently, but to notice what else could also be true.
-                </p>
-
-                <button
-                  onClick={() =>
-                    updateActiveJourney({
-                      readyForLevel2: !activeJourney.readyForLevel2,
-                    })
-                  }
-                  style={{
-                    marginTop: "24px",
-                    padding: "12px 18px",
-                    borderRadius: "999px",
-                    border: activeJourney.readyForLevel2
-                      ? "2px solid #0f766e"
-                      : "2px solid #d8d2c4",
-                    background: activeJourney.readyForLevel2
-                      ? "#ccfbf1"
-                      : "#fffdf8",
-                    color: activeJourney.readyForLevel2
-                      ? "#115e59"
-                      : "#52606d",
-                    fontWeight: "bold",
-                    cursor: "pointer",
-                  }}
-                >
-                  {activeJourney.readyForLevel2
-                    ? "✓ I am ready for Level 2"
-                    : "I am ready for Level 2"}
-                </button>
-
-                <StatusList
-                  title="Ready for Level 2"
-                  players={joinedPlayers.map((player) => player.player_name)}
-                  done={(index) =>
-                    Boolean(multiplayerJourneys[index]?.readyForLevel2)
-                  }
-                />
-
-                <div style={{ marginTop: "24px" }}>
-  {isHost ? (
-    <>
-      <button
-        onClick={async () => await updateRoomStep(4)}
-        style={{ ...secondaryButtonStyle, marginRight: "12px" }}
-      >
-        Back
-      </button>
-
-      <button
-        onClick={async () => {
-          if (allPlayersReadyForLevel2) {
-            await updateCurrentReceiverIndex(0);
-            await updateRoomStep(6);
-          }
-        }}
-        disabled={!allPlayersReadyForLevel2}
-        style={{
-          ...primaryButtonStyle,
-          opacity: allPlayersReadyForLevel2 ? 1 : 0.4,
-          cursor: allPlayersReadyForLevel2 ? "pointer" : "not-allowed",
-        }}
-      >
-        Continue to Level 2 together
-      </button>
-    </>
-  ) : (
-    <p style={{ color: "#52606d", fontSize: "16px" }}>
-      Waiting for the host to continue.
-    </p>
-  )}
-</div>
-              </div>
-            )}
-
-            {!showClosingScreen && multiplayerStep === 6 && (
-              <div
-                style={{
-                  marginTop: "32px",
-                  padding: "30px",
-                  borderRadius: "28px",
-                  background: "#fffdf8",
-                  boxShadow: "0 12px 30px rgba(0,0,0,0.08)",
-                }}
-              >
-                <StepHeader
-                  title="Step 6 — Alternative Beliefs"
-                  label={`Receiving: ${currentReceiver}`}
-                />
-
-                <p style={{ fontSize: "18px", lineHeight: 1.7, color: "#52606d" }}>
-                  This round, {currentReceiver} receives alternative beliefs.
-                  Everyone else silently offers one possible lens. These are not
-                  advice, explanations, or persuasion.
-                </p>
-
-                {isActivePlayerReceiver ? (
-                    <div
-    style={{
-      marginTop: "28px",
-      padding: "26px",
-      borderRadius: "24px",
-      background: "rgba(255,255,255,0.75)",
-    }}
-  >
-    <h4 style={{ marginTop: 0, fontSize: "22px" }}>
-      {activePlayer?.player_name}, this is your receiving round.
-    </h4>
-
-    <p style={{ fontSize: "18px", lineHeight: 1.7, color: "#52606d" }}>
-      Wait quietly while the others offer alternative beliefs. You do not need
-      to explain, defend, or respond yet.
-    </p>
-  </div>
-) : activePlayerOffer ? (
-  <div
-    style={{
-      marginTop: "28px",
-      padding: "26px",
-      borderRadius: "24px",
-      background: "rgba(255,255,255,0.75)",
-    }}
-  >
-    <h4 style={{ marginTop: 0, fontSize: "22px" }}>
-      Offer submitted.
-    </h4>
-
-    <p style={{ fontSize: "18px", lineHeight: 1.7, color: "#52606d" }}>
-      Thank you. Wait quietly while the others offer their alternative beliefs.
-    </p>
-  </div>
-                ) : (
-                  <>
-                    <p
-                      style={{
-                        fontSize: "18px",
-                        lineHeight: 1.7,
-                        color: "#52606d",
-                      }}
-                    >
-                      {activePlayer?.player_name}, choose one alternative belief for{" "}
-                      {currentReceiver}.
-                    </p>
-
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns:
-                          "repeat(auto-fit, minmax(160px, 1fr))",
-                        gap: "20px",
-                        marginTop: "24px",
-                      }}
-                    >
-                      {beliefCards
-                        .filter(
-                          (card) =>
-                            card.id !== BELIEF_WILD_CARD_ID &&
-                            card.id !==
-                              multiplayerJourneys[currentReceiverIndex].belief
-                        )
-                        .map((card) => (
-                          <button
-                            key={card.id}
-                            onClick={async () => {
-  if (myPlayerIndex < 0 || !roomCode) return;
-
-  setBeliefOffers((offers) => {
-    const withoutCurrentOffer = offers.filter(
-      (offer) =>
-        !(
-          offer.receiverIndex === currentReceiverIndex &&
-          offer.giverIndex === myPlayerIndex
-        )
-    );
-
-    return [
-      ...withoutCurrentOffer,
-      {
-        receiverIndex: currentReceiverIndex,
-        giverIndex: myPlayerIndex,
-        beliefId: card.id,
-      },
-    ];
-  });
-
-  const { error } = await supabase.from("belief_offers").upsert(
-    {
-      room_code: roomCode,
-      receiver_index: currentReceiverIndex,
-      giver_index: myPlayerIndex,
-      belief_id: card.id,
-      updated_at: new Date().toISOString(),
-    },
-    {
-      onConflict: "room_code,receiver_index,giver_index",
-    }
-  );
-
-  if (error) {
-  }
-}}
-                            style={cardButtonStyle(false)}
-                          >
-                            <img
-                              src={card.image}
-                              alt={card.title}
-                              style={{ width: "100%", display: "block" }}
-                            />
-                          </button>
-                        ))}
-                    </div>
-                  </>
-                )}
-
+            {!showClosingScreen &&
+              promptHasBeenRead &&
+              multiplayerStep === 5 && (
                 <div
                   style={{
-                    marginTop: "28px",
-                    padding: "20px",
-                    borderRadius: "20px",
-                    background: "rgba(255,255,255,0.75)",
+                    marginTop: "32px",
+                    padding: "30px",
+                    borderRadius: "28px",
+                    background: "#fffdf8",
+                    boxShadow: "0 12px 30px rgba(0,0,0,0.08)",
                   }}
                 >
-                  <h4 style={{ marginTop: 0 }}>Offers for {currentReceiver}</h4>
+                  <h2 style={{ fontSize: "30px", marginTop: 0 }}>
+                    Level 1 Complete
+                  </h2>
 
-                  {joinedPlayers.map((player, index) => {
-                    if (index === currentReceiverIndex) {
+                  <p
+                    style={{ fontSize: "24px", lineHeight: 1.5, marginTop: 0 }}
+                  >
+                    You have each named what you felt, noticed the stories you
+                    were carrying, and chosen a response with intention.
+                  </p>
+
+                  <p
+                    style={{
+                      fontSize: "18px",
+                      lineHeight: 1.7,
+                      color: "#52606d",
+                    }}
+                  >
+                    That is already meaningful work. Level 2 invites the group
+                    to gently explore other possible beliefs, not to force
+                    anyone to feel differently, but to notice what else could
+                    also be true.
+                  </p>
+
+                  <button
+                    onClick={() =>
+                      updateActiveJourney({
+                        readyForLevel2: !activeJourney.readyForLevel2,
+                      })
+                    }
+                    style={{
+                      marginTop: "24px",
+                      padding: "12px 18px",
+                      borderRadius: "999px",
+                      border: activeJourney.readyForLevel2
+                        ? "2px solid #0f766e"
+                        : "2px solid #d8d2c4",
+                      background: activeJourney.readyForLevel2
+                        ? "#ccfbf1"
+                        : "#fffdf8",
+                      color: activeJourney.readyForLevel2
+                        ? "#115e59"
+                        : "#52606d",
+                      fontWeight: "bold",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {activeJourney.readyForLevel2
+                      ? "✓ I am ready for Level 2"
+                      : "I am ready for Level 2"}
+                  </button>
+
+                  <StatusList
+                    title="Ready for Level 2"
+                    players={joinedPlayers.map((player) => player.player_name)}
+                    done={(index) =>
+                      Boolean(multiplayerJourneys[index]?.readyForLevel2)
+                    }
+                  />
+
+                  <div style={{ marginTop: "24px" }}>
+                    {isHost ? (
+                      <>
+                        <button
+                          onClick={async () => await updateRoomStep(4)}
+                          style={{
+                            ...secondaryButtonStyle,
+                            marginRight: "12px",
+                          }}
+                        >
+                          Back
+                        </button>
+
+                        <button
+                          onClick={async () => {
+                            if (allPlayersReadyForLevel2) {
+                              await updateCurrentReceiverIndex(0);
+                              await updateRoomStep(6);
+                            }
+                          }}
+                          disabled={!allPlayersReadyForLevel2}
+                          style={{
+                            ...primaryButtonStyle,
+                            opacity: allPlayersReadyForLevel2 ? 1 : 0.4,
+                            cursor: allPlayersReadyForLevel2
+                              ? "pointer"
+                              : "not-allowed",
+                          }}
+                        >
+                          Continue to Level 2 together
+                        </button>
+                      </>
+                    ) : (
+                      <p style={{ color: "#52606d", fontSize: "16px" }}>
+                        Waiting for the host to continue.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+            {!showClosingScreen &&
+              promptHasBeenRead &&
+              multiplayerStep === 6 && (
+                <div
+                  style={{
+                    marginTop: "32px",
+                    padding: "30px",
+                    borderRadius: "28px",
+                    background: "#fffdf8",
+                    boxShadow: "0 12px 30px rgba(0,0,0,0.08)",
+                  }}
+                >
+                  <StepHeader
+                    title="Step 6 — Alternative Beliefs"
+                    label={`Receiving: ${currentReceiver}`}
+                  />
+
+                  <p
+                    style={{
+                      fontSize: "18px",
+                      lineHeight: 1.7,
+                      color: "#52606d",
+                    }}
+                  >
+                    This round, {currentReceiver} receives alternative beliefs.
+                    Everyone else silently offers one possible lens. These are
+                    not advice, explanations, or persuasion.
+                  </p>
+
+                  {isActivePlayerReceiver ? (
+                    <div
+                      style={{
+                        marginTop: "28px",
+                        padding: "26px",
+                        borderRadius: "24px",
+                        background: "rgba(255,255,255,0.75)",
+                      }}
+                    >
+                      <h4 style={{ marginTop: 0, fontSize: "22px" }}>
+                        {activePlayer?.player_name}, this is your receiving
+                        round.
+                      </h4>
+
+                      <p
+                        style={{
+                          fontSize: "18px",
+                          lineHeight: 1.7,
+                          color: "#52606d",
+                        }}
+                      >
+                        Wait quietly while the others offer alternative beliefs.
+                        You do not need to explain, defend, or respond yet.
+                      </p>
+                    </div>
+                  ) : activePlayerOffer ? (
+                    <div
+                      style={{
+                        marginTop: "28px",
+                        padding: "26px",
+                        borderRadius: "24px",
+                        background: "rgba(255,255,255,0.75)",
+                      }}
+                    >
+                      <h4 style={{ marginTop: 0, fontSize: "22px" }}>
+                        Offer submitted.
+                      </h4>
+
+                      <p
+                        style={{
+                          fontSize: "18px",
+                          lineHeight: 1.7,
+                          color: "#52606d",
+                        }}
+                      >
+                        Thank you. Wait quietly while the others offer their
+                        alternative beliefs.
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      <p
+                        style={{
+                          fontSize: "18px",
+                          lineHeight: 1.7,
+                          color: "#52606d",
+                        }}
+                      >
+                        {activePlayer?.player_name}, choose one alternative
+                        belief for {currentReceiver}.
+                      </p>
+
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns:
+                            "repeat(auto-fit, minmax(160px, 1fr))",
+                          gap: "20px",
+                          marginTop: "24px",
+                        }}
+                      >
+                        {beliefCards
+                          .filter(
+                            (card) =>
+                              card.id !== BELIEF_WILD_CARD_ID &&
+                              card.id !==
+                                multiplayerJourneys[currentReceiverIndex]
+                                  .belief,
+                          )
+                          .map((card) => (
+                            <button
+                              key={card.id}
+                              onClick={async () => {
+                                if (myPlayerIndex < 0 || !roomCode) return;
+
+                                setBeliefOffers((offers) => {
+                                  const withoutCurrentOffer = offers.filter(
+                                    (offer) =>
+                                      !(
+                                        offer.receiverIndex ===
+                                          currentReceiverIndex &&
+                                        offer.giverIndex === myPlayerIndex
+                                      ),
+                                  );
+
+                                  return [
+                                    ...withoutCurrentOffer,
+                                    {
+                                      receiverIndex: currentReceiverIndex,
+                                      giverIndex: myPlayerIndex,
+                                      beliefId: card.id,
+                                    },
+                                  ];
+                                });
+
+                                const { error } = await supabase
+                                  .from("belief_offers")
+                                  .upsert(
+                                    {
+                                      room_code: roomCode,
+                                      receiver_index: currentReceiverIndex,
+                                      giver_index: myPlayerIndex,
+                                      belief_id: card.id,
+                                      updated_at: new Date().toISOString(),
+                                    },
+                                    {
+                                      onConflict:
+                                        "room_code,receiver_index,giver_index",
+                                    },
+                                  );
+
+                                if (error) {
+                                }
+                              }}
+                              style={cardButtonStyle(false)}
+                            >
+                              <img
+                                src={card.image}
+                                alt={card.title}
+                                style={{ width: "100%", display: "block" }}
+                              />
+                            </button>
+                          ))}
+                      </div>
+                    </>
+                  )}
+
+                  <div
+                    style={{
+                      marginTop: "28px",
+                      padding: "20px",
+                      borderRadius: "20px",
+                      background: "rgba(255,255,255,0.75)",
+                    }}
+                  >
+                    <h4 style={{ marginTop: 0 }}>
+                      Offers for {currentReceiver}
+                    </h4>
+
+                    {joinedPlayers.map((player, index) => {
+                      if (index === currentReceiverIndex) {
+                        return (
+                          <p
+                            key={player.id}
+                            style={{ margin: "8px 0", fontSize: "17px" }}
+                          >
+                            — {player.player_name} is receiving
+                          </p>
+                        );
+                      }
+
+                      const hasOffered = beliefOffers.some(
+                        (offer) =>
+                          offer.receiverIndex === currentReceiverIndex &&
+                          offer.giverIndex === index,
+                      );
+
                       return (
                         <p
                           key={player.id}
                           style={{ margin: "8px 0", fontSize: "17px" }}
                         >
-                          — {player.player_name} is receiving
+                          {hasOffered ? "✓" : "○"} {player.player_name}
                         </p>
                       );
-                    }
-
-                    const hasOffered = beliefOffers.some(
-                      (offer) =>
-                        offer.receiverIndex === currentReceiverIndex &&
-                        offer.giverIndex === index
-                    );
-
-                    return (
-                      <p
-                        key={player.id}
-                        style={{ margin: "8px 0", fontSize: "17px" }}
-                      >
-                        {hasOffered ? "✓" : "○"} {player.player_name}
-                      </p>
-                    );
-                  })}
-                </div>
-
-                {currentReceiverIsComplete && (
-                  <div
-                    style={{
-                      marginTop: "28px",
-                      padding: "24px",
-                      borderRadius: "24px",
-                      background: "#ecfdf5",
-                      color: "#065f46",
-                    }}
-                  >
-                    <strong>{currentReceiver}</strong> has received all
-                    alternative beliefs.
+                    })}
                   </div>
-                )}
 
-                <div style={{ marginTop: "28px" }}>
-  {isHost ? (
-    <>
-      <button
-        onClick={async () => await updateRoomStep(5)}
-        style={{ ...secondaryButtonStyle, marginRight: "12px" }}
-      >
-        Back
-      </button>
+                  {currentReceiverIsComplete && (
+                    <div
+                      style={{
+                        marginTop: "28px",
+                        padding: "24px",
+                        borderRadius: "24px",
+                        background: "#ecfdf5",
+                        color: "#065f46",
+                      }}
+                    >
+                      <strong>{currentReceiver}</strong> has received all
+                      alternative beliefs.
+                    </div>
+                  )}
 
-      {currentReceiverIsComplete && (
-        <button
-          onClick={async () => {
-            if (currentReceiverIndex < joinedPlayers.length - 1) {
-              await updateCurrentReceiverIndex(currentReceiverIndex + 1);
-            } else {
-              setMultiplayerJourneys((journeys) =>
-                journeys.map((journey) => ({
-                  ...journey,
-                  finalBelief: journey.belief,
-                  customFinalBelief:
-                    journey.belief === BELIEF_WILD_CARD_ID
-                      ? journey.customBelief
-                      : "",
-                  finalEmotion: journey.emotion,
-                  customFinalEmotion:
-                    journey.emotion === EMOTION_WILD_CARD_ID
-                      ? journey.customEmotion
-                      : "",
-                  timelineRedeclared: false,
-                }))
-              );
+                  <div style={{ marginTop: "28px" }}>
+                    {isHost ? (
+                      <>
+                        <button
+                          onClick={async () => await updateRoomStep(5)}
+                          style={{
+                            ...secondaryButtonStyle,
+                            marginRight: "12px",
+                          }}
+                        >
+                          Back
+                        </button>
 
-              await updateRoomStep(7);
-            }
-          }}
-          style={primaryButtonStyle}
-        >
-          {currentReceiverIndex < joinedPlayers.length - 1
-            ? "Next receiver"
-            : "Continue to Step 7"}
-        </button>
-      )}
-    </>
-  ) : (
-    <p style={{ color: "#52606d", fontSize: "16px" }}>
-      Waiting for the host to continue.
-    </p>
-  )}
-</div>
-              </div>
-            )}
+                        {currentReceiverIsComplete && (
+                          <button
+                            onClick={async () => {
+                              if (
+                                currentReceiverIndex <
+                                joinedPlayers.length - 1
+                              ) {
+                                await updateCurrentReceiverIndex(
+                                  currentReceiverIndex + 1,
+                                );
+                              } else {
+                                setMultiplayerJourneys((journeys) =>
+                                  journeys.map((journey) => ({
+                                    ...journey,
+                                    finalBelief: journey.belief,
+                                    customFinalBelief:
+                                      journey.belief === BELIEF_WILD_CARD_ID
+                                        ? journey.customBelief
+                                        : "",
+                                    finalEmotion: journey.emotion,
+                                    customFinalEmotion:
+                                      journey.emotion === EMOTION_WILD_CARD_ID
+                                        ? journey.customEmotion
+                                        : "",
+                                    timelineRedeclared: false,
+                                  })),
+                                );
 
-            {!showClosingScreen && multiplayerStep === 7 && (
-              <div
-                style={{
-                  marginTop: "32px",
-                  padding: "30px",
-                  borderRadius: "28px",
-                  background: "#fffdf8",
-                  boxShadow: "0 12px 30px rgba(0,0,0,0.08)",
-                }}
-              >
-                <StepHeader
-                  title="Step 7 — Meaning-Making"
-                  label="Multiplayer Step 7"
-                />
+                                await updateRoomStep(7);
+                              }
+                            }}
+                            style={primaryButtonStyle}
+                          >
+                            {currentReceiverIndex < joinedPlayers.length - 1
+                              ? "Next receiver"
+                              : "Continue to Step 7"}
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      <p style={{ color: "#52606d", fontSize: "16px" }}>
+                        Waiting for the host to continue.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
 
-                <p style={{ fontSize: "18px", lineHeight: 1.7, color: "#52606d" }}>
-                  <strong>{promptReader}</strong>, read this prompt to the
-                  table: “Look at the alternative beliefs you received. You may
-                  choose to keep your original belief or choose one that was
-                  offered. Notice what feels most true and most helpful.”
-                </p>
-
-                <h4 style={{ marginTop: "28px", fontSize: "22px" }}>
-                  Choose your final belief
-                </h4>
-
+            {!showClosingScreen &&
+              promptHasBeenRead &&
+              multiplayerStep === 7 && (
                 <div
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-                    gap: "20px",
-                    marginTop: "18px",
+                    marginTop: "32px",
+                    padding: "30px",
+                    borderRadius: "28px",
+                    background: "#fffdf8",
+                    boxShadow: "0 12px 30px rgba(0,0,0,0.08)",
                   }}
                 >
-                  {[
-                    {
-                      beliefId: activeJourney.belief,
-                      label: "Original belief",
-                      giver: "You",
-                    },
-                    ...beliefOffers
-                      .filter((offer) => offer.receiverIndex === myPlayerIndex)
-                      .map((offer) => ({
-                        beliefId: offer.beliefId,
-                        label: "Offered belief",
-                        giver:
-                          joinedPlayers[offer.giverIndex]?.player_name || "Player",
-                      })),
-                  ]
-                    .filter((item, index, array) => {
-                      if (!item.beliefId) return false;
-                      if (item.beliefId !== BELIEF_WILD_CARD_ID) return true;
-                      return (
-                        array.findIndex(
-                          (other) => other.beliefId === BELIEF_WILD_CARD_ID
-                        ) === index
-                      );
-                    })
-                    .map((item, index) => {
-                      const card = beliefCards.find(
-                        (belief) => belief.id === item.beliefId
-                      );
+                  <StepHeader
+                    title="Step 7 — Meaning-Making"
+                    label="Multiplayer Step 7"
+                  />
 
-                      if (!card) return null;
-
-                      const isSelected = activeJourney.finalBelief === card.id;
-
-                      return (
-                        <button
-                          key={`${item.beliefId}-${item.giver}-${index}`}
-                          onClick={() =>
-                            updateActiveJourney({
-                              finalBelief: card.id,
-                              customFinalBelief:
-                                card.id === BELIEF_WILD_CARD_ID
-                                  ? activeJourney.customFinalBelief
-                                  : "",
-                            })
-                          }
-                          style={cardButtonStyle(isSelected)}
-                        >
-                          <div
-                            style={{
-                              padding: "10px",
-                              fontSize: "13px",
-                              fontWeight: "bold",
-                              color: "#52606d",
-                              background: "#fffdf8",
-                              textAlign: "left",
-                            }}
-                          >
-                            {item.label} · {item.giver}
-                          </div>
-
-                          <img
-                            src={card.image}
-                            alt={card.title}
-                            style={{ width: "100%", display: "block" }}
-                          />
-                          {card.id === "belief_wild_card" &&
-                          activeJourney.customBelief?.trim().length > 0 && (
-                          <div
-                          style={{
-                          padding: "14px",
-                          fontSize: "15px",
-                          lineHeight: 1.5,
-                          color: "#115e59",
-                          background: "#ccfbf1",
-                          textAlign: "left", 
-      }}
-    >
-      <strong>You wrote:</strong>
-      <br />
-      “{activeJourney.customBelief}”
-    </div>
-)}
-                        </button>
-                      );
-                    })}
-                </div>
-
-                {activeJourney.finalBelief === BELIEF_WILD_CARD_ID && (
-                  <div
+                  <p
                     style={{
-                      marginTop: "28px",
-                      padding: "24px",
-                      borderRadius: "24px",
-                      background: "rgba(255,255,255,0.72)",
+                      fontSize: "18px",
+                      lineHeight: 1.7,
+                      color: "#52606d",
                     }}
                   >
-                    <h3 style={{ marginTop: 0 }}>Name your final belief</h3>
+                    <strong>{promptReader}</strong>, read this prompt to the
+                    table: “Look at the alternative beliefs you received. You
+                    may choose to keep your original belief or choose one that
+                    was offered. Notice what feels most true and most helpful.”
+                  </p>
 
-                    <textarea
-                      placeholder="What belief do you choose now?"
-                      value={activeJourney.customFinalBelief}
-                      onChange={(e) =>
-                        updateActiveJourney({
-                          customFinalBelief: e.target.value,
-                        })
-                      }
-                      style={{
-                        width: "100%",
-                        minHeight: "120px",
-                        padding: "18px",
-                        borderRadius: "18px",
-                        border: "2px solid #d8d2c4",
-                        fontSize: "17px",
-                        resize: "vertical",
-                        background: "#fffdf8",
-                      }}
-                    />
+                  <h4 style={{ marginTop: "28px", fontSize: "22px" }}>
+                    Choose your final belief
+                  </h4>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns:
+                        "repeat(auto-fit, minmax(160px, 1fr))",
+                      gap: "20px",
+                      marginTop: "18px",
+                    }}
+                  >
+                    {[
+                      {
+                        beliefId: activeJourney.belief,
+                        label: "Original belief",
+                        giver: "You",
+                      },
+                      ...beliefOffers
+                        .filter(
+                          (offer) => offer.receiverIndex === myPlayerIndex,
+                        )
+                        .map((offer) => ({
+                          beliefId: offer.beliefId,
+                          label: "Offered belief",
+                          giver:
+                            joinedPlayers[offer.giverIndex]?.player_name ||
+                            "Player",
+                        })),
+                    ]
+                      .filter((item, index, array) => {
+                        if (!item.beliefId) return false;
+                        if (item.beliefId !== BELIEF_WILD_CARD_ID) return true;
+                        return (
+                          array.findIndex(
+                            (other) => other.beliefId === BELIEF_WILD_CARD_ID,
+                          ) === index
+                        );
+                      })
+                      .map((item, index) => {
+                        const card = beliefCards.find(
+                          (belief) => belief.id === item.beliefId,
+                        );
+
+                        if (!card) return null;
+
+                        const isSelected =
+                          activeJourney.finalBelief === card.id;
+
+                        return (
+                          <button
+                            key={`${item.beliefId}-${item.giver}-${index}`}
+                            onClick={() =>
+                              updateActiveJourney({
+                                finalBelief: card.id,
+                                customFinalBelief:
+                                  card.id === BELIEF_WILD_CARD_ID
+                                    ? activeJourney.customFinalBelief
+                                    : "",
+                              })
+                            }
+                            style={cardButtonStyle(isSelected)}
+                          >
+                            <div
+                              style={{
+                                padding: "10px",
+                                fontSize: "13px",
+                                fontWeight: "bold",
+                                color: "#52606d",
+                                background: "#fffdf8",
+                                textAlign: "left",
+                              }}
+                            >
+                              {item.label} · {item.giver}
+                            </div>
+
+                            <img
+                              src={card.image}
+                              alt={card.title}
+                              style={{ width: "100%", display: "block" }}
+                            />
+                            {card.id === "belief_wild_card" &&
+                              activeJourney.customBelief?.trim().length > 0 && (
+                                <div
+                                  style={{
+                                    padding: "14px",
+                                    fontSize: "15px",
+                                    lineHeight: 1.5,
+                                    color: "#115e59",
+                                    background: "#ccfbf1",
+                                    textAlign: "left",
+                                  }}
+                                >
+                                  <strong>You wrote:</strong>
+                                  <br />“{activeJourney.customBelief}”
+                                </div>
+                              )}
+                          </button>
+                        );
+                      })}
                   </div>
-                )}
 
-                {activeJourney.finalBelief &&
-                  (activeJourney.finalBelief !== BELIEF_WILD_CARD_ID ||
-                    activeJourney.customFinalBelief.trim().length > 0) && (
-                  <>
-                    <h4 style={{ marginTop: "36px", fontSize: "22px" }}>
-                      What emotion feels true now?
-                    </h4>
-
-                    <p style={{ fontSize: "17px", color: "#52606d" }}>
-                      The emotion may change, soften, intensify, or stay the
-                      same.
-                    </p>
-
+                  {activeJourney.finalBelief === BELIEF_WILD_CARD_ID && (
                     <div
                       style={{
-                        display: "grid",
-                        gridTemplateColumns:
-                          "repeat(auto-fit, minmax(160px, 1fr))",
-                        gap: "20px",
-                        marginTop: "18px",
+                        marginTop: "28px",
+                        padding: "24px",
+                        borderRadius: "24px",
+                        background: "rgba(255,255,255,0.72)",
                       }}
                     >
-                      {emotionCards.map((card) => (
+                      <h3 style={{ marginTop: 0 }}>Name your final belief</h3>
+
+                      <textarea
+                        placeholder="What belief do you choose now?"
+                        value={activeJourney.customFinalBelief}
+                        onChange={(e) =>
+                          updateActiveJourney({
+                            customFinalBelief: e.target.value,
+                          })
+                        }
+                        style={{
+                          width: "100%",
+                          minHeight: "120px",
+                          padding: "18px",
+                          borderRadius: "18px",
+                          border: "2px solid #d8d2c4",
+                          fontSize: "17px",
+                          resize: "vertical",
+                          background: "#fffdf8",
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  {activeJourney.finalBelief &&
+                    (activeJourney.finalBelief !== BELIEF_WILD_CARD_ID ||
+                      activeJourney.customFinalBelief.trim().length > 0) && (
+                      <>
+                        <h4 style={{ marginTop: "36px", fontSize: "22px" }}>
+                          What emotion feels true now?
+                        </h4>
+
+                        <p style={{ fontSize: "17px", color: "#52606d" }}>
+                          The emotion may change, soften, intensify, or stay the
+                          same.
+                        </p>
+
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fit, minmax(160px, 1fr))",
+                            gap: "20px",
+                            marginTop: "18px",
+                          }}
+                        >
+                          {emotionCards.map((card) => (
+                            <button
+                              key={card.id}
+                              onClick={() =>
+                                updateActiveJourney({
+                                  finalEmotion: card.id,
+                                  customFinalEmotion:
+                                    card.id === EMOTION_WILD_CARD_ID
+                                      ? activeJourney.customFinalEmotion
+                                      : "",
+                                })
+                              }
+                              style={cardButtonStyle(
+                                activeJourney.finalEmotion === card.id,
+                              )}
+                            >
+                              <img
+                                src={card.image}
+                                alt={card.title}
+                                style={{ width: "100%", display: "block" }}
+                              />
+                            </button>
+                          ))}
+                        </div>
+
+                        {activeJourney.finalEmotion ===
+                          EMOTION_WILD_CARD_ID && (
+                          <div
+                            style={{
+                              marginTop: "28px",
+                              padding: "24px",
+                              borderRadius: "24px",
+                              background: "rgba(255,255,255,0.72)",
+                            }}
+                          >
+                            <h3 style={{ marginTop: 0 }}>
+                              Name your current emotion
+                            </h3>
+
+                            <textarea
+                              placeholder="What emotion feels true now?"
+                              value={activeJourney.customFinalEmotion}
+                              onChange={(e) =>
+                                updateActiveJourney({
+                                  customFinalEmotion: e.target.value,
+                                })
+                              }
+                              style={{
+                                width: "100%",
+                                minHeight: "100px",
+                                padding: "18px",
+                                borderRadius: "18px",
+                                border: "2px solid #d8d2c4",
+                                fontSize: "17px",
+                                resize: "vertical",
+                                background: "#fffdf8",
+                              }}
+                            />
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                  {activeJourney.finalBelief &&
+                    (activeJourney.finalBelief !== BELIEF_WILD_CARD_ID ||
+                      activeJourney.customFinalBelief.trim().length > 0) &&
+                    activeJourney.finalEmotion &&
+                    (activeJourney.finalEmotion !== EMOTION_WILD_CARD_ID ||
+                      activeJourney.customFinalEmotion.trim().length > 0) && (
+                      <>
+                        <div
+                          style={{
+                            marginTop: "32px",
+                            padding: "30px",
+                            borderRadius: "28px",
+                            background: "rgba(255,255,255,0.82)",
+                            boxShadow: "0 12px 30px rgba(0,0,0,0.08)",
+                            fontSize: "26px",
+                            lineHeight: 1.5,
+                          }}
+                        >
+                          <span style={{ color: "#777" }}>When </span>
+                          <strong>
+                            {activeJourney.situationText ||
+                              "[the situation happened]"}
+                          </strong>
+                          <span style={{ color: "#777" }}>
+                            {" "}
+                            , I now tell myself{" "}
+                          </span>
+                          <strong>{activeFinalBeliefText}</strong>
+                          <span style={{ color: "#777" }}> , so I feel </span>
+                          <strong>{activeFinalEmotionText}</strong>
+                          <span>.</span>
+                        </div>
+
                         <button
-                          key={card.id}
                           onClick={() =>
                             updateActiveJourney({
-                              finalEmotion: card.id,
-                              customFinalEmotion:
-                                card.id === EMOTION_WILD_CARD_ID
-                                  ? activeJourney.customFinalEmotion
-                                  : "",
-                            })
-                          }
-                          style={cardButtonStyle(
-                            activeJourney.finalEmotion === card.id
-                          )}
-                        >
-                          <img
-                            src={card.image}
-                            alt={card.title}
-                            style={{ width: "100%", display: "block" }}
-                          />
-                        </button>
-                      ))}
-                    </div>
-
-                    {activeJourney.finalEmotion === EMOTION_WILD_CARD_ID && (
-                      <div
-                        style={{
-                          marginTop: "28px",
-                          padding: "24px",
-                          borderRadius: "24px",
-                          background: "rgba(255,255,255,0.72)",
-                        }}
-                      >
-                        <h3 style={{ marginTop: 0 }}>
-                          Name your current emotion
-                        </h3>
-
-                        <textarea
-                          placeholder="What emotion feels true now?"
-                          value={activeJourney.customFinalEmotion}
-                          onChange={(e) =>
-                            updateActiveJourney({
-                              customFinalEmotion: e.target.value,
+                              timelineRedeclared:
+                                !activeJourney.timelineRedeclared,
                             })
                           }
                           style={{
-                            width: "100%",
-                            minHeight: "100px",
-                            padding: "18px",
-                            borderRadius: "18px",
-                            border: "2px solid #d8d2c4",
-                            fontSize: "17px",
-                            resize: "vertical",
-                            background: "#fffdf8",
+                            marginTop: "24px",
+                            padding: "12px 18px",
+                            borderRadius: "999px",
+                            border: activeJourney.timelineRedeclared
+                              ? "2px solid #0f766e"
+                              : "2px solid #d8d2c4",
+                            background: activeJourney.timelineRedeclared
+                              ? "#ccfbf1"
+                              : "#fffdf8",
+                            color: activeJourney.timelineRedeclared
+                              ? "#115e59"
+                              : "#52606d",
+                            fontWeight: "bold",
+                            cursor: "pointer",
                           }}
-                        />
-                      </div>
+                        >
+                          {activeJourney.timelineRedeclared
+                            ? "✓ Timeline redeclared"
+                            : "I have redeclared this aloud"}
+                        </button>
+                      </>
                     )}
-                  </>
-                )}
 
-                {activeJourney.finalBelief &&
-                  (activeJourney.finalBelief !== BELIEF_WILD_CARD_ID ||
-                    activeJourney.customFinalBelief.trim().length > 0) &&
-                  activeJourney.finalEmotion &&
-                  (activeJourney.finalEmotion !== EMOTION_WILD_CARD_ID ||
-                    activeJourney.customFinalEmotion.trim().length > 0) && (
-                  <>
-                    <div
-                      style={{
-                        marginTop: "32px",
-                        padding: "30px",
-                        borderRadius: "28px",
-                        background: "rgba(255,255,255,0.82)",
-                        boxShadow: "0 12px 30px rgba(0,0,0,0.08)",
-                        fontSize: "26px",
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      <span style={{ color: "#777" }}>When </span>
-                      <strong>
-                        {activeJourney.situationText ||
-                          "[the situation happened]"}
-                      </strong>
-                      <span style={{ color: "#777" }}>
-                        {" "}
-                        , I now tell myself{" "}
-                      </span>
-                      <strong>{activeFinalBeliefText}</strong>
-                      <span style={{ color: "#777" }}> , so I feel </span>
-                      <strong>{activeFinalEmotionText}</strong>
-                      <span>.</span>
-                    </div>
-
-                    <button
-                      onClick={() =>
-                        updateActiveJourney({
-                          timelineRedeclared:
-                            !activeJourney.timelineRedeclared,
-                        })
-                      }
-                      style={{
-                        marginTop: "24px",
-                        padding: "12px 18px",
-                        borderRadius: "999px",
-                        border: activeJourney.timelineRedeclared
-                          ? "2px solid #0f766e"
-                          : "2px solid #d8d2c4",
-                        background: activeJourney.timelineRedeclared
-                          ? "#ccfbf1"
-                          : "#fffdf8",
-                        color: activeJourney.timelineRedeclared
-                          ? "#115e59"
-                          : "#52606d",
-                        fontWeight: "bold",
-                        cursor: "pointer",
-                      }}
-                    >
-                      {activeJourney.timelineRedeclared
-                        ? "✓ Timeline redeclared"
-                        : "I have redeclared this aloud"}
-                    </button>
-                  </>
-                )}
-
-                <StatusList
-                  title="Step 7 Status"
-                  players={joinedPlayers.map((player) => player.player_name)}
-                  done={(index) => {
-                    const journey = multiplayerJourneys[index];
-                     if (!journey) return false;
-                    return Boolean(
-                      journey.finalBelief &&
+                  <StatusList
+                    title="Step 7 Status"
+                    players={joinedPlayers.map((player) => player.player_name)}
+                    done={(index) => {
+                      const journey = multiplayerJourneys[index];
+                      if (!journey) return false;
+                      return Boolean(
+                        journey.finalBelief &&
                         (journey.finalBelief !== BELIEF_WILD_CARD_ID ||
                           journey.customFinalBelief.trim().length > 0) &&
                         journey.finalEmotion &&
                         (journey.finalEmotion !== EMOTION_WILD_CARD_ID ||
                           journey.customFinalEmotion.trim().length > 0) &&
-                        journey.timelineRedeclared
-                    );
-                  }}
-                />
+                        journey.timelineRedeclared,
+                      );
+                    }}
+                  />
 
-                <div style={{ marginTop: "28px" }}>
-  {isHost ? (
-    <>
-      <button
-        onClick={async () => await updateRoomStep(6)}
-        style={{ ...secondaryButtonStyle, marginRight: "12px" }}
-      >
-        Back
-      </button>
+                  <div style={{ marginTop: "28px" }}>
+                    {isHost ? (
+                      <>
+                        <button
+                          onClick={async () => await updateRoomStep(6)}
+                          style={{
+                            ...secondaryButtonStyle,
+                            marginRight: "12px",
+                          }}
+                        >
+                          Back
+                        </button>
 
-      <button
-        onClick={async () => {
-          if (allPlayersRedeclaredTimeline) {
-            setMultiplayerJourneys((journeys) =>
-              journeys.map((journey) => ({
-                ...journey,
-                finalResponse: journey.finalResponse || journey.response,
-                finalResponseConfirmed: false,
-                customFinalResponse:
-                  journey.finalResponse === RESPONSE_WILD_CARD_ID
-                    ? journey.customFinalResponse
-                    : journey.response === RESPONSE_WILD_CARD_ID
-                    ? journey.customResponse
-                    : "",
-              }))
-            );
+                        <button
+                          onClick={async () => {
+                            if (allPlayersRedeclaredTimeline) {
+                              setMultiplayerJourneys((journeys) =>
+                                journeys.map((journey) => ({
+                                  ...journey,
+                                  finalResponse:
+                                    journey.finalResponse || journey.response,
+                                  finalResponseConfirmed: false,
+                                  customFinalResponse:
+                                    journey.finalResponse ===
+                                    RESPONSE_WILD_CARD_ID
+                                      ? journey.customFinalResponse
+                                      : journey.response ===
+                                          RESPONSE_WILD_CARD_ID
+                                        ? journey.customResponse
+                                        : "",
+                                })),
+                              );
 
-            await updateRoomStep(8);
-          }
-        }}
-        disabled={!allPlayersRedeclaredTimeline}
-        style={{
-          ...primaryButtonStyle,
-          opacity: allPlayersRedeclaredTimeline ? 1 : 0.4,
-          cursor: allPlayersRedeclaredTimeline ? "pointer" : "not-allowed",
-        }}
-      >
-        Continue when everyone is ready
-      </button>
-    </>
-  ) : (
-    <p style={{ color: "#52606d", fontSize: "16px" }}>
-      Waiting for the host to continue.
-    </p>
-  )}
-</div>
-              </div>
-            )}
+                              await updateRoomStep(8);
+                            }
+                          }}
+                          disabled={!allPlayersRedeclaredTimeline}
+                          style={{
+                            ...primaryButtonStyle,
+                            opacity: allPlayersRedeclaredTimeline ? 1 : 0.4,
+                            cursor: allPlayersRedeclaredTimeline
+                              ? "pointer"
+                              : "not-allowed",
+                          }}
+                        >
+                          Continue when everyone is ready
+                        </button>
+                      </>
+                    ) : (
+                      <p style={{ color: "#52606d", fontSize: "16px" }}>
+                        Waiting for the host to continue.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
 
-            {!showClosingScreen && multiplayerStep === 8 && (
-              <div
-                style={{
-                  marginTop: "32px",
-                  padding: "30px",
-                  borderRadius: "28px",
-                  background: "#fffdf8",
-                  boxShadow: "0 12px 30px rgba(0,0,0,0.08)",
-                }}
-              >
-                <StepHeader
-                  title="Step 8 — Final Response"
-                  label="Multiplayer Step 8"
-                />
-
-                <p style={{ fontSize: "18px", lineHeight: 1.7, color: "#52606d" }}>
-                  <strong>{promptReader}</strong>, read this prompt to the
-                  table: “After considering other beliefs, decide if you want
-                  to keep your response or choose a new one.”
-                </p>
-
+            {!showClosingScreen &&
+              promptHasBeenRead &&
+              multiplayerStep === 8 && (
                 <div
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-                    gap: "20px",
-                    marginTop: "24px",
+                    marginTop: "32px",
+                    padding: "30px",
+                    borderRadius: "28px",
+                    background: "#fffdf8",
+                    boxShadow: "0 12px 30px rgba(0,0,0,0.08)",
                   }}
                 >
-                  {responseCards.map((card) => (
-                    <button
-                      key={card.id}
-                      onClick={() =>
-                        updateActiveJourney({
-                          finalResponse: card.id,
-                          finalResponseConfirmed: false,
-                          customFinalResponse:
-                            card.id === RESPONSE_WILD_CARD_ID
-                              ? activeJourney.customFinalResponse
-                              : "",
-                        })
-                      }
-                      style={cardButtonStyle(
-                        activeJourney.finalResponse === card.id
-                      )}
-                    >
-                      <img
-                        src={card.image}
-                        alt={card.title}
-                        style={{ width: "100%", display: "block" }}
-                      />
-                    </button>
-                  ))}
-                </div>
+                  <StepHeader
+                    title="Step 8 — Final Response"
+                    label="Multiplayer Step 8"
+                  />
 
-                {activeJourney.finalResponse === RESPONSE_WILD_CARD_ID && (
+                  <p
+                    style={{
+                      fontSize: "18px",
+                      lineHeight: 1.7,
+                      color: "#52606d",
+                    }}
+                  >
+                    <strong>{promptReader}</strong>, read this prompt to the
+                    table: “After considering other beliefs, decide if you want
+                    to keep your response or choose a new one.”
+                  </p>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns:
+                        "repeat(auto-fit, minmax(160px, 1fr))",
+                      gap: "20px",
+                      marginTop: "24px",
+                    }}
+                  >
+                    {responseCards.map((card) => (
+                      <button
+                        key={card.id}
+                        onClick={() =>
+                          updateActiveJourney({
+                            finalResponse: card.id,
+                            finalResponseConfirmed: false,
+                            customFinalResponse:
+                              card.id === RESPONSE_WILD_CARD_ID
+                                ? activeJourney.customFinalResponse
+                                : "",
+                          })
+                        }
+                        style={cardButtonStyle(
+                          activeJourney.finalResponse === card.id,
+                        )}
+                      >
+                        <img
+                          src={card.image}
+                          alt={card.title}
+                          style={{ width: "100%", display: "block" }}
+                        />
+                      </button>
+                    ))}
+                  </div>
+
+                  {activeJourney.finalResponse === RESPONSE_WILD_CARD_ID && (
+                    <div
+                      style={{
+                        marginTop: "28px",
+                        padding: "24px",
+                        borderRadius: "24px",
+                        background: "rgba(255,255,255,0.72)",
+                        maxWidth: "760px",
+                      }}
+                    >
+                      <h3 style={{ marginTop: 0 }}>Name your final response</h3>
+
+                      <textarea
+                        placeholder="What response do you choose now?"
+                        value={activeJourney.customFinalResponse}
+                        onChange={(e) =>
+                          updateActiveJourney({
+                            customFinalResponse: e.target.value,
+                          })
+                        }
+                        style={{
+                          width: "100%",
+                          minHeight: "120px",
+                          padding: "18px",
+                          borderRadius: "18px",
+                          border: "2px solid #d8d2c4",
+                          fontSize: "17px",
+                          resize: "vertical",
+                          background: "#fffdf8",
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  {activeJourney.finalResponse &&
+                    (activeJourney.finalResponse !== RESPONSE_WILD_CARD_ID ||
+                      activeJourney.customFinalResponse.trim().length > 0) && (
+                      <div
+                        style={{
+                          marginTop: "32px",
+                          padding: "28px",
+                          borderRadius: "26px",
+                          background: "rgba(255,255,255,0.82)",
+                          boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
+                        }}
+                      >
+                        <p
+                          style={{
+                            marginTop: 0,
+                            fontSize: "18px",
+                            color: "#52606d",
+                          }}
+                        >
+                          Final response:
+                        </p>
+
+                        <p
+                          style={{
+                            fontSize: "32px",
+                            fontWeight: "bold",
+                            lineHeight: 1.4,
+                            marginBottom: 0,
+                          }}
+                        >
+                          {activeFinalResponseText}
+                        </p>
+
+                        <button
+                          onClick={() =>
+                            updateActiveJourney({
+                              finalResponseConfirmed: true,
+                            })
+                          }
+                          style={{
+                            marginTop: "20px",
+                            padding: "12px 18px",
+                            borderRadius: "999px",
+                            border: activeJourney.finalResponseConfirmed
+                              ? "2px solid #0f766e"
+                              : "2px solid #d8d2c4",
+                            background: activeJourney.finalResponseConfirmed
+                              ? "#ccfbf1"
+                              : "#fffdf8",
+                            color: activeJourney.finalResponseConfirmed
+                              ? "#115e59"
+                              : "#52606d",
+                            fontWeight: "bold",
+                            cursor: "pointer",
+                          }}
+                        >
+                          {activeJourney.finalResponseConfirmed
+                            ? "✓ Response confirmed"
+                            : "Confirm this response"}
+                        </button>
+                      </div>
+                    )}
+
+                  <StatusList
+                    title="Step 8 Status"
+                    players={joinedPlayers.map((player) => player.player_name)}
+                    done={(index) => {
+                      const journey = multiplayerJourneys[index];
+                      if (!journey) return false;
+                      return Boolean(
+                        journey.finalResponseConfirmed &&
+                        journey.finalResponse &&
+                        (journey.finalResponse !== RESPONSE_WILD_CARD_ID ||
+                          journey.customFinalResponse.trim().length > 0),
+                      );
+                    }}
+                  />
+
+                  <div style={{ marginTop: "28px" }}>
+                    {isHost ? (
+                      <>
+                        <button
+                          onClick={async () => await updateRoomStep(7)}
+                          style={{
+                            ...secondaryButtonStyle,
+                            marginRight: "12px",
+                          }}
+                        >
+                          Back
+                        </button>
+
+                        <button
+                          onClick={async () => {
+                            if (allPlayersChoseFinalResponse)
+                              await updateRoomStep(9);
+                          }}
+                          disabled={!allPlayersChoseFinalResponse}
+                          style={{
+                            ...primaryButtonStyle,
+                            opacity: allPlayersChoseFinalResponse ? 1 : 0.4,
+                            cursor: allPlayersChoseFinalResponse
+                              ? "pointer"
+                              : "not-allowed",
+                          }}
+                        >
+                          Continue when everyone is ready
+                        </button>
+                      </>
+                    ) : (
+                      <p style={{ color: "#52606d", fontSize: "16px" }}>
+                        Waiting for the host to continue.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+            {!showClosingScreen &&
+              promptHasBeenRead &&
+              multiplayerStep === 9 && (
+                <div
+                  style={{
+                    marginTop: "32px",
+                    padding: "30px",
+                    borderRadius: "28px",
+                    background: "#fffdf8",
+                    boxShadow: "0 12px 30px rgba(0,0,0,0.08)",
+                  }}
+                >
+                  <StepHeader
+                    title="Step 9 — Reflection"
+                    label="Multiplayer Step 9"
+                  />
+
+                  <p
+                    style={{
+                      fontSize: "18px",
+                      lineHeight: 1.7,
+                      color: "#52606d",
+                    }}
+                  >
+                    {activePlayer?.player_name}, take a moment to notice what
+                    shifted, what stayed, and what opened up.
+                  </p>
+
+                  <div
+                    style={{ marginTop: "24px", display: "grid", gap: "16px" }}
+                  >
+                    {[
+                      "What did you notice about your beliefs?",
+                      "Which belief felt most true, and which belief felt most helpful?",
+                      "What was it like receiving or considering alternative beliefs?",
+                      "What opened up for you that was not there before?",
+                    ].map((question) => (
+                      <div
+                        key={question}
+                        style={{
+                          padding: "20px",
+                          borderRadius: "22px",
+                          background: "rgba(255,255,255,0.75)",
+                          boxShadow: "0 8px 20px rgba(0,0,0,0.05)",
+                          fontSize: "19px",
+                          lineHeight: 1.5,
+                          fontWeight: "bold",
+                        }}
+                      >
+                        {question}
+                      </div>
+                    ))}
+                  </div>
+
                   <div
                     style={{
                       marginTop: "28px",
-                      padding: "24px",
+                      padding: "26px",
                       borderRadius: "24px",
-                      background: "rgba(255,255,255,0.72)",
-                      maxWidth: "760px",
+                      background: "rgba(255,255,255,0.82)",
+                      boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
                     }}
                   >
-                    <h3 style={{ marginTop: 0 }}>Name your final response</h3>
+                    <h4 style={{ marginTop: 0, fontSize: "22px" }}>
+                      Your final timeline
+                    </h4>
+
+                    <p style={{ fontSize: "22px", lineHeight: 1.6 }}>
+                      When{" "}
+                      <strong>
+                        {activeJourney.situationText ||
+                          "[the situation happened]"}
+                      </strong>
+                      , I now tell myself{" "}
+                      <strong>{activeFinalBeliefText}</strong>, so I feel{" "}
+                      <strong>{activeFinalEmotionText}</strong>. I choose to{" "}
+                      <strong>{activeFinalResponseText}</strong>.
+                    </p>
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: "28px",
+                      padding: "26px",
+                      borderRadius: "24px",
+                      background: "rgba(255,255,255,0.75)",
+                    }}
+                  >
+                    <h4 style={{ marginTop: 0, fontSize: "22px" }}>
+                      Reflection Space
+                    </h4>
+
+                    <p
+                      style={{
+                        fontSize: "17px",
+                        lineHeight: 1.7,
+                        color: "#52606d",
+                      }}
+                    >
+                      You may write about what you noticed, or simply share it
+                      aloud.
+                    </p>
 
                     <textarea
-                      placeholder="What response do you choose now?"
-                      value={activeJourney.customFinalResponse}
+                      placeholder="What are you noticing now?"
+                      value={activeJourney.reflectionText}
                       onChange={(e) =>
-                        updateActiveJourney({
-                          customFinalResponse: e.target.value,
-                        })
+                        updateActiveJourney({ reflectionText: e.target.value })
                       }
                       style={{
                         width: "100%",
-                        minHeight: "120px",
+                        minHeight: "160px",
+                        marginTop: "14px",
                         padding: "18px",
                         borderRadius: "18px",
                         border: "2px solid #d8d2c4",
@@ -3030,307 +3619,87 @@ const myPlayerIndex = joinedPlayers.findIndex(
                         background: "#fffdf8",
                       }}
                     />
-                  </div>
-                )}
-
-                {activeJourney.finalResponse &&
-                  (activeJourney.finalResponse !== RESPONSE_WILD_CARD_ID ||
-                    activeJourney.customFinalResponse.trim().length > 0) && (
-                  <div
-                    style={{
-                      marginTop: "32px",
-                      padding: "28px",
-                      borderRadius: "26px",
-                      background: "rgba(255,255,255,0.82)",
-                      boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
-                    }}
-                  >
-                    <p
-                      style={{
-                        marginTop: 0,
-                        fontSize: "18px",
-                        color: "#52606d",
-                      }}
-                    >
-                      Final response:
-                    </p>
-
-                    <p
-                      style={{
-                        fontSize: "32px",
-                        fontWeight: "bold",
-                        lineHeight: 1.4,
-                        marginBottom: 0,
-                      }}
-                    >
-                      {activeFinalResponseText}
-                    </p>
 
                     <button
                       onClick={() =>
                         updateActiveJourney({
-                          finalResponseConfirmed: true,
+                          reflectionSharedAloud:
+                            !activeJourney.reflectionSharedAloud,
                         })
                       }
                       style={{
-                        marginTop: "20px",
+                        marginTop: "18px",
                         padding: "12px 18px",
                         borderRadius: "999px",
-                        border: activeJourney.finalResponseConfirmed
+                        border: activeJourney.reflectionSharedAloud
                           ? "2px solid #0f766e"
                           : "2px solid #d8d2c4",
-                        background: activeJourney.finalResponseConfirmed
+                        background: activeJourney.reflectionSharedAloud
                           ? "#ccfbf1"
                           : "#fffdf8",
-                        color: activeJourney.finalResponseConfirmed
+                        color: activeJourney.reflectionSharedAloud
                           ? "#115e59"
                           : "#52606d",
                         fontWeight: "bold",
                         cursor: "pointer",
                       }}
                     >
-                      {activeJourney.finalResponseConfirmed
-                        ? "✓ Response confirmed"
-                        : "Confirm this response"}
+                      {activeJourney.reflectionSharedAloud
+                        ? "✓ Shared aloud"
+                        : "I shared this aloud"}
                     </button>
                   </div>
-                )}
 
-                <StatusList
-                  title="Step 8 Status"
-                  players={joinedPlayers.map((player) => player.player_name)}
-                  done={(index) => {
-                    const journey = multiplayerJourneys[index];
-                     if (!journey) return false;
-                    return Boolean(
-                      journey.finalResponseConfirmed &&
-                        journey.finalResponse &&
-                        (journey.finalResponse !== RESPONSE_WILD_CARD_ID ||
-                          journey.customFinalResponse.trim().length > 0)
-                    );
-                  }}
-                />
-
-                <div style={{ marginTop: "28px" }}>
-  {isHost ? (
-    <>
-      <button
-        onClick={async () => await updateRoomStep(7)}
-        style={{ ...secondaryButtonStyle, marginRight: "12px" }}
-      >
-        Back
-      </button>
-
-      <button
-        onClick={async () => {
-          if (allPlayersChoseFinalResponse) await updateRoomStep(9);
-        }}
-        disabled={!allPlayersChoseFinalResponse}
-        style={{
-          ...primaryButtonStyle,
-          opacity: allPlayersChoseFinalResponse ? 1 : 0.4,
-          cursor: allPlayersChoseFinalResponse ? "pointer" : "not-allowed",
-        }}
-      >
-        Continue when everyone is ready
-      </button>
-    </>
-  ) : (
-    <p style={{ color: "#52606d", fontSize: "16px" }}>
-      Waiting for the host to continue.
-    </p>
-  )}
-</div>
-              </div>
-            )}
-
-            {!showClosingScreen && multiplayerStep === 9 && (
-              <div
-                style={{
-                  marginTop: "32px",
-                  padding: "30px",
-                  borderRadius: "28px",
-                  background: "#fffdf8",
-                  boxShadow: "0 12px 30px rgba(0,0,0,0.08)",
-                }}
-              >
-                <StepHeader
-                  title="Step 9 — Reflection"
-                  label="Multiplayer Step 9"
-                />
-
-                <p style={{ fontSize: "18px", lineHeight: 1.7, color: "#52606d" }}>
-                  {activePlayer?.player_name}, take a moment to notice what shifted, what
-                  stayed, and what opened up.
-                </p>
-
-                <div style={{ marginTop: "24px", display: "grid", gap: "16px" }}>
-                  {[
-                    "What did you notice about your beliefs?",
-                    "Which belief felt most true, and which belief felt most helpful?",
-                    "What was it like receiving or considering alternative beliefs?",
-                    "What opened up for you that was not there before?",
-                  ].map((question) => (
-                    <div
-                      key={question}
-                      style={{
-                        padding: "20px",
-                        borderRadius: "22px",
-                        background: "rgba(255,255,255,0.75)",
-                        boxShadow: "0 8px 20px rgba(0,0,0,0.05)",
-                        fontSize: "19px",
-                        lineHeight: 1.5,
-                        fontWeight: "bold",
-                      }}
-                    >
-                      {question}
-                    </div>
-                  ))}
-                </div>
-
-                <div
-                  style={{
-                    marginTop: "28px",
-                    padding: "26px",
-                    borderRadius: "24px",
-                    background: "rgba(255,255,255,0.82)",
-                    boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
-                  }}
-                >
-                  <h4 style={{ marginTop: 0, fontSize: "22px" }}>
-                    Your final timeline
-                  </h4>
-
-                  <p style={{ fontSize: "22px", lineHeight: 1.6 }}>
-                    When{" "}
-                    <strong>
-                      {activeJourney.situationText || "[the situation happened]"}
-                    </strong>
-                    , I now tell myself{" "}
-                    <strong>{activeFinalBeliefText}</strong>, so I feel{" "}
-                    <strong>{activeFinalEmotionText}</strong>. I choose to{" "}
-                    <strong>{activeFinalResponseText}</strong>
-                    .
-                  </p>
-                </div>
-
-                <div
-                  style={{
-                    marginTop: "28px",
-                    padding: "26px",
-                    borderRadius: "24px",
-                    background: "rgba(255,255,255,0.75)",
-                  }}
-                >
-                  <h4 style={{ marginTop: 0, fontSize: "22px" }}>
-                    Reflection Space
-                  </h4>
-
-                  <p
-                    style={{
-                      fontSize: "17px",
-                      lineHeight: 1.7,
-                      color: "#52606d",
-                    }}
-                  >
-                    You may write about what you noticed, or simply share it
-                    aloud.
-                  </p>
-
-                  <textarea
-                    placeholder="What are you noticing now?"
-                    value={activeJourney.reflectionText}
-                    onChange={(e) =>
-                      updateActiveJourney({ reflectionText: e.target.value })
-                    }
-                    style={{
-                      width: "100%",
-                      minHeight: "160px",
-                      marginTop: "14px",
-                      padding: "18px",
-                      borderRadius: "18px",
-                      border: "2px solid #d8d2c4",
-                      fontSize: "17px",
-                      resize: "vertical",
-                      background: "#fffdf8",
+                  <StatusList
+                    title="Step 9 Status"
+                    players={joinedPlayers.map((player) => player.player_name)}
+                    done={(index) => {
+                      const journey = multiplayerJourneys[index];
+                      if (!journey) return false;
+                      return (
+                        journey.reflectionText.trim().length > 0 ||
+                        journey.reflectionSharedAloud
+                      );
                     }}
                   />
 
-                  <button
-                    onClick={() =>
-                      updateActiveJourney({
-                        reflectionSharedAloud:
-                          !activeJourney.reflectionSharedAloud,
-                      })
-                    }
-                    style={{
-                      marginTop: "18px",
-                      padding: "12px 18px",
-                      borderRadius: "999px",
-                      border: activeJourney.reflectionSharedAloud
-                        ? "2px solid #0f766e"
-                        : "2px solid #d8d2c4",
-                      background: activeJourney.reflectionSharedAloud
-                        ? "#ccfbf1"
-                        : "#fffdf8",
-                      color: activeJourney.reflectionSharedAloud
-                        ? "#115e59"
-                        : "#52606d",
-                      fontWeight: "bold",
-                      cursor: "pointer",
-                    }}
-                  >
-                    {activeJourney.reflectionSharedAloud
-                      ? "✓ Shared aloud"
-                      : "I shared this aloud"}
-                  </button>
+                  <div style={{ marginTop: "28px" }}>
+                    {isHost ? (
+                      <>
+                        <button
+                          onClick={async () => await updateRoomStep(8)}
+                          style={{
+                            ...secondaryButtonStyle,
+                            marginRight: "12px",
+                          }}
+                        >
+                          Back
+                        </button>
+
+                        <button
+                          onClick={async () => {
+                            if (allPlayersReflected) await updateRoomStep(10);
+                          }}
+                          disabled={!allPlayersReflected}
+                          style={{
+                            ...primaryButtonStyle,
+                            opacity: allPlayersReflected ? 1 : 0.4,
+                            cursor: allPlayersReflected
+                              ? "pointer"
+                              : "not-allowed",
+                          }}
+                        >
+                          Complete the game
+                        </button>
+                      </>
+                    ) : (
+                      <p style={{ color: "#191c1f", fontSize: "16px" }}>
+                        Waiting for the host to complete the game.
+                      </p>
+                    )}
+                  </div>
                 </div>
-
-                <StatusList
-                  title="Step 9 Status"
-                  players={joinedPlayers.map((player) => player.player_name)}
-                  done={(index) => {
-                    const journey = multiplayerJourneys[index];
-                     if (!journey) return false;
-                    return (
-                      journey.reflectionText.trim().length > 0 ||
-                      journey.reflectionSharedAloud
-                    );
-                  }}
-                />
-
-                <div style={{ marginTop: "28px" }}>
-  {isHost ? (
-    <>
-      <button
-        onClick={async () => await updateRoomStep(8)}
-        style={{ ...secondaryButtonStyle, marginRight: "12px" }}
-      >
-        Back
-      </button>
-
-     <button
-  onClick={async () => {
-    if (allPlayersReflected) await updateRoomStep(10);
-  }}
-  disabled={!allPlayersReflected}
-  style={{
-    ...primaryButtonStyle,
-    opacity: allPlayersReflected ? 1 : 0.4,
-    cursor: allPlayersReflected ? "pointer" : "not-allowed",
-  }}
->
-  Complete the game
-</button>
-    </>
-  ) : (
-    <p style={{ color: "#191c1f", fontSize: "16px" }}>
-      Waiting for the host to complete the game.
-    </p>
-  )}
-</div>
-              </div>
-            )}
+              )}
           </section>
         </div>
       </main>
@@ -3351,12 +3720,12 @@ const myPlayerIndex = joinedPlayers.findIndex(
           }}
         >
           <button
-  onClick={leaveRoom}
-  style={{
-    ...secondaryButtonStyle,
-    marginBottom: "18px",
-  }}
->
+            onClick={leaveRoom}
+            style={{
+              ...secondaryButtonStyle,
+              marginBottom: "18px",
+            }}
+          >
             ← Back to start
           </button>
 
@@ -3413,14 +3782,14 @@ const myPlayerIndex = joinedPlayers.findIndex(
                     index === currentStep
                       ? "#0f766e"
                       : index < currentStep
-                      ? "#ccfbf1"
-                      : "rgba(255,255,255,0.75)",
+                        ? "#ccfbf1"
+                        : "rgba(255,255,255,0.75)",
                   color:
                     index === currentStep
                       ? "white"
                       : index < currentStep
-                      ? "#115e59"
-                      : "#64748b",
+                        ? "#115e59"
+                        : "#64748b",
                 }}
               >
                 {index + 1}. {step}
@@ -3453,11 +3822,16 @@ const myPlayerIndex = joinedPlayers.findIndex(
                   carrying, and chosen a response with intention.
                 </p>
 
-                <p style={{ fontSize: "18px", lineHeight: 1.7, color: "#52606d" }}>
-                  That is already meaningful work. Level 2 invites you to
-                  gently explore other possible beliefs, not to force yourself
-                  to feel differently, but to notice what else could also be
-                  true.
+                <p
+                  style={{
+                    fontSize: "18px",
+                    lineHeight: 1.7,
+                    color: "#52606d",
+                  }}
+                >
+                  That is already meaningful work. Level 2 invites you to gently
+                  explore other possible beliefs, not to force yourself to feel
+                  differently, but to notice what else could also be true.
                 </p>
 
                 <div style={{ marginTop: "28px" }}>
@@ -3593,7 +3967,9 @@ const myPlayerIndex = joinedPlayers.findIndex(
                   }}
                 />
 
-                <p style={{ marginTop: "12px", fontSize: "14px", color: "#777" }}>
+                <p
+                  style={{ marginTop: "12px", fontSize: "14px", color: "#777" }}
+                >
                   You can leave this blank if you shared the situation aloud.
                 </p>
 
@@ -3612,7 +3988,9 @@ const myPlayerIndex = joinedPlayers.findIndex(
                     cursor: "pointer",
                   }}
                 >
-                  {situationSharedAloud ? "✓ Shared aloud" : "I shared this aloud"}
+                  {situationSharedAloud
+                    ? "✓ Shared aloud"
+                    : "I shared this aloud"}
                 </button>
               </div>
 
@@ -3701,7 +4079,10 @@ const myPlayerIndex = joinedPlayers.findIndex(
                 </button>
 
                 {beliefIsComplete && (
-                  <button onClick={() => setCurrentStep(3)} style={primaryButtonStyle}>
+                  <button
+                    onClick={() => setCurrentStep(3)}
+                    style={primaryButtonStyle}
+                  >
                     Continue
                   </button>
                 )}
@@ -3948,12 +4329,14 @@ const myPlayerIndex = joinedPlayers.findIndex(
               </p>
 
               <CardGrid
-                cardsToShow={beliefCards.filter((card) => card.id !== selectedBelief)}
+                cardsToShow={beliefCards.filter(
+                  (card) => card.id !== selectedBelief,
+                )}
                 selectedIds={alternativeBeliefs}
                 onSelect={(id) => {
                   if (alternativeBeliefs.includes(id)) {
                     setAlternativeBeliefs(
-                      alternativeBeliefs.filter((beliefId) => beliefId !== id)
+                      alternativeBeliefs.filter((beliefId) => beliefId !== id),
                     );
                   } else if (alternativeBeliefs.length < 2) {
                     setAlternativeBeliefs([...alternativeBeliefs, id]);
@@ -3978,7 +4361,7 @@ const myPlayerIndex = joinedPlayers.findIndex(
                       setCustomFinalEmotion(
                         selectedEmotion === EMOTION_WILD_CARD_ID
                           ? customEmotion
-                          : ""
+                          : "",
                       );
                       setTimelineRedeclared(false);
                       setCurrentStep(6);
@@ -4016,40 +4399,42 @@ const myPlayerIndex = joinedPlayers.findIndex(
                   .filter(Boolean)
                   .map((beliefId) => {
                     const card = beliefCards.find(
-                      (belief) => belief.id === beliefId
+                      (belief) => belief.id === beliefId,
                     );
 
                     if (!card) return null;
 
-                    return (<button
-  key={card.id}
-  onClick={() => setFinalBelief(card.id)}
-  style={cardButtonStyle(finalBelief === card.id)}
->
-  <img
-    src={card.image}
-    alt={card.title}
-    style={{ width: "100%", display: "block" }}
-  />
+                    return (
+                      <button
+                        key={card.id}
+                        onClick={() => setFinalBelief(card.id)}
+                        style={cardButtonStyle(finalBelief === card.id)}
+                      >
+                        <img
+                          src={card.image}
+                          alt={card.title}
+                          style={{ width: "100%", display: "block" }}
+                        />
 
-  {card.id === "belief_wild_card" && customBelief.trim().length > 0 && (
-    <div
-      style={{
-        padding: "14px",
-        fontSize: "15px",
-        lineHeight: 1.4,
-        fontWeight: "bold",
-        color: "#115e59",
-        background: "#ccfbf1",
-        textAlign: "left",
-      }}
-    >
-       <strong>You wrote:</strong>
-       <br />
-       “{customBelief}”
-    </div>
-  )}
-</button>);
+                        {card.id === "belief_wild_card" &&
+                          customBelief.trim().length > 0 && (
+                            <div
+                              style={{
+                                padding: "14px",
+                                fontSize: "15px",
+                                lineHeight: 1.4,
+                                fontWeight: "bold",
+                                color: "#115e59",
+                                background: "#ccfbf1",
+                                textAlign: "left",
+                              }}
+                            >
+                              <strong>You wrote:</strong>
+                              <br />“{customBelief}”
+                            </div>
+                          )}
+                      </button>
+                    );
                   })}
               </div>
 
@@ -4060,8 +4445,7 @@ const myPlayerIndex = joinedPlayers.findIndex(
                   </h3>
 
                   <p style={{ fontSize: "17px", color: "#52606d" }}>
-                    The emotion may change, soften, intensify, or stay the
-                    same.
+                    The emotion may change, soften, intensify, or stay the same.
                   </p>
 
                   <CardGrid
@@ -4085,7 +4469,9 @@ const myPlayerIndex = joinedPlayers.findIndex(
                         background: "rgba(255,255,255,0.72)",
                       }}
                     >
-                      <h3 style={{ marginTop: 0 }}>Name your current emotion</h3>
+                      <h3 style={{ marginTop: 0 }}>
+                        Name your current emotion
+                      </h3>
 
                       <textarea
                         placeholder="What emotion feels true now?"
@@ -4121,16 +4507,13 @@ const myPlayerIndex = joinedPlayers.findIndex(
                     }}
                   >
                     <span style={{ color: "#777" }}>When </span>
-                    <strong>{situationText || "[the situation happened]"}</strong>
-                    <span style={{ color: "#777" }}>
-                      {" "}
-                      , I now tell myself{" "}
-                    </span>
+                    <strong>
+                      {situationText || "[the situation happened]"}
+                    </strong>
+                    <span style={{ color: "#777" }}> , I now tell myself </span>
                     <strong>{finalBeliefText}</strong>
                     <span style={{ color: "#777" }}> , so I feel </span>
-                    <strong>
-                      {finalEmotionText}
-                    </strong>
+                    <strong>{finalEmotionText}</strong>
                     <span>.</span>
                   </div>
 
@@ -4164,22 +4547,24 @@ const myPlayerIndex = joinedPlayers.findIndex(
                   Back
                 </button>
 
-                {finalBelief && finalEmotionIsComplete && timelineRedeclared && (
-                  <button
-                    onClick={() => {
-                      setFinalResponse(selectedResponse);
-                      setCustomFinalResponse(
-                        selectedResponse === RESPONSE_WILD_CARD_ID
-                          ? customResponse
-                          : ""
-                      );
-                      setCurrentStep(7);
-                    }}
-                    style={primaryButtonStyle}
-                  >
-                    Continue
-                  </button>
-                )}
+                {finalBelief &&
+                  finalEmotionIsComplete &&
+                  timelineRedeclared && (
+                    <button
+                      onClick={() => {
+                        setFinalResponse(selectedResponse);
+                        setCustomFinalResponse(
+                          selectedResponse === RESPONSE_WILD_CARD_ID
+                            ? customResponse
+                            : "",
+                        );
+                        setCurrentStep(7);
+                      }}
+                      style={primaryButtonStyle}
+                    >
+                      Continue
+                    </button>
+                  )}
               </div>
             </>
           )}
@@ -4347,17 +4732,11 @@ const myPlayerIndex = joinedPlayers.findIndex(
                 </h3>
 
                 <p style={{ fontSize: "24px", lineHeight: 1.6 }}>
-                  When <strong>{situationText || "[the situation happened]"}</strong>
+                  When{" "}
+                  <strong>{situationText || "[the situation happened]"}</strong>
                   , I now tell myself <strong>{finalBeliefText}</strong>, so I
-                  feel{" "}
-                  <strong>
-                    {finalEmotionText}
-                  </strong>
-                  . I choose to{" "}
-                  <strong>
-                    {finalResponseText}
-                  </strong>
-                  .
+                  feel <strong>{finalEmotionText}</strong>. I choose to{" "}
+                  <strong>{finalResponseText}</strong>.
                 </p>
               </div>
 
@@ -4375,7 +4754,13 @@ const myPlayerIndex = joinedPlayers.findIndex(
                   Reflection Space
                 </h3>
 
-                <p style={{ fontSize: "17px", lineHeight: 1.7, color: "#52606d" }}>
+                <p
+                  style={{
+                    fontSize: "17px",
+                    lineHeight: 1.7,
+                    color: "#52606d",
+                  }}
+                >
                   You may write about what you noticed, or simply share it
                   aloud.
                 </p>
@@ -4414,7 +4799,9 @@ const myPlayerIndex = joinedPlayers.findIndex(
                     cursor: "pointer",
                   }}
                 >
-                  {reflectionSharedAloud ? "✓ Shared aloud" : "I shared this aloud"}
+                  {reflectionSharedAloud
+                    ? "✓ Shared aloud"
+                    : "I shared this aloud"}
                 </button>
               </div>
 
