@@ -434,9 +434,10 @@ useEffect(() => {
     setRoomCode(session.roomCode);
     setMyPlayerId(session.playerId);
     setPlayerName(session.playerName);
-    setIsHost(session.isHost);
-
+    
     const players = await loadJoinedPlayers(session.roomCode);
+    const hostPlayerId = players[0]?.id;
+    setIsHost(session.playerId === hostPlayerId);
     await loadRoomStep(session.roomCode);
     await loadPlayerJourneys(session.roomCode, players);
     await loadBeliefOffers(session.roomCode);
