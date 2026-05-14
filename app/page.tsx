@@ -2102,12 +2102,14 @@ const receiverResponseText =
                     />
 
                     <button
-                      disabled={!activeJourney.situationTextConfirmed}
-                      onClick={() =>
-                        updateActiveJourney({
-                          situationSharedAloud: true,
-                            })
-                        }
+  disabled={!activeJourney.situationTextConfirmed}
+  onClick={() =>
+    updateActiveJourney({
+      situationText: draftSituationText || activeJourney.situationText,
+      situationTextConfirmed: true,
+      situationSharedAloud: true,
+    })
+  }
                       style={{
                         marginTop: "18px",
                         padding: "12px 18px",
