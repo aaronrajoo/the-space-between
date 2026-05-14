@@ -615,7 +615,7 @@ useEffect(() => {
 
   if (stepCard) {
     stepCard.scrollIntoView({
-      behavior: "smooth",
+      behavior: "auto",
       block: "start",
     });
   }
@@ -1807,10 +1807,36 @@ useEffect(() => {
               multiplayerStep !== 10 &&
               promptHasBeenRead && (
                 <>
-                  <h2 style={{ fontSize: "30px", marginTop: 0 }}>
-                    Active Player:{" "}
-                    {activePlayer?.player_name || "Unknown Player"}
-                  </h2>
+                 <h2 style={{ fontSize: "30px", marginTop: 0 }}>
+  Active Player:{" "}
+  {activePlayer?.player_name || "Unknown Player"}
+</h2>
+
+<div
+  style={{
+    marginTop: "14px",
+    marginBottom: "22px",
+    padding: "16px 18px",
+    borderRadius: "20px",
+    background: "#fffdf8",
+    border: "2px solid #d8d2c4",
+    fontSize: "15px",
+    lineHeight: 1.6,
+    color: "#52606d",
+  }}
+>
+  <strong>My Timeline:</strong>{" "}
+  [
+  Situation:{" "}
+  <strong>{activeJourney.situationText || "Not chosen yet"}</strong>
+  {" "}– Belief:{" "}
+  <strong>{activeBeliefText || "Not chosen yet"}</strong>
+  {" "}– Emotion:{" "}
+  <strong>{activeEmotionText || "Not chosen yet"}</strong>
+  {" "}– Response:{" "}
+  <strong>{activeResponseText || "Not chosen yet"}</strong>
+  ]
+</div>
                 </>
               )}
 
@@ -1891,10 +1917,8 @@ useEffect(() => {
 
                       <textarea
                         placeholder="What emotion are you feeling?"
-                        value={activeJourney.customEmotion}
-                        onChange={(e) =>
-                          updateActiveJourney({ customEmotion: e.target.value, customEmotionConfirmed: false })
-                        }
+                        value={draftCustomEmotion || activeJourney.customEmotion}
+                        onChange={(e) => setDraftCustomEmotion(e.target.value)}
                         style={{
                           width: "100%",
                           minHeight: "100px",
@@ -1908,8 +1932,13 @@ useEffect(() => {
                       />
                       <ConfirmTextButton
                         confirmed={Boolean(activeJourney.customEmotionConfirmed)}
-                        disabled={activeJourney.customEmotion.trim().length === 0}
-                        onConfirm={() => updateActiveJourney({ customEmotionConfirmed: true })}
+                        disabled={(draftCustomEmotion || activeJourney.customEmotion).trim().length === 0}
+                        onConfirm={() =>
+                          updateActiveJourney({
+                            customEmotion: draftCustomEmotion || activeJourney.customEmotion,
+                            customEmotionConfirmed: true,
+                          })
+                        }
                         label="Confirm this emotion"
                         confirmedLabel="✓ Emotion confirmed"
                       />
@@ -2023,14 +2052,14 @@ useEffect(() => {
                     />
                     <ConfirmTextButton
                       confirmed={Boolean(activeJourney.situationTextConfirmed)}
-                      disabled={activeJourney.situationText.trim().length === 0}
+                      disabled={(draftSituationText || activeJourney.situationText).trim().length === 0}
                       onConfirm={() =>
-  updateActiveJourney({
-    situationText: draftSituationText || activeJourney.situationText,
-    situationTextConfirmed: true,
-    situationSharedAloud: false,
-  })
-}
+                        updateActiveJourney({
+                          situationText: draftSituationText || activeJourney.situationText,
+                          situationTextConfirmed: true,
+                          situationSharedAloud: false,
+                        })
+                      }
                       label="Confirm typed situation"
                       confirmedLabel="✓ Situation confirmed"
                     />
@@ -2196,10 +2225,8 @@ useEffect(() => {
 
                       <textarea
                         placeholder="What story are you telling yourself?"
-                        value={activeJourney.customBelief}
-                        onChange={(e) =>
-                          updateActiveJourney({ customBelief: e.target.value, customBeliefConfirmed: false })
-                        }
+                        value={draftCustomBelief || activeJourney.customBelief}
+                        onChange={(e) => setDraftCustomBelief(e.target.value)}
                         style={{
                           width: "100%",
                           minHeight: "120px",
@@ -2213,8 +2240,13 @@ useEffect(() => {
                       />
                       <ConfirmTextButton
                         confirmed={Boolean(activeJourney.customBeliefConfirmed)}
-                        disabled={activeJourney.customBelief.trim().length === 0}
-                        onConfirm={() => updateActiveJourney({ customBeliefConfirmed: true })}
+                        disabled={(draftCustomBelief || activeJourney.customBelief).trim().length === 0}
+                        onConfirm={() =>
+                          updateActiveJourney({
+                            customBelief: draftCustomBelief || activeJourney.customBelief,
+                            customBeliefConfirmed: true,
+                          })
+                        }
                         label="Confirm this belief"
                         confirmedLabel="✓ Belief confirmed"
                       />
@@ -2478,13 +2510,8 @@ useEffect(() => {
 
                       <textarea
                         placeholder="What response are you willing to try?"
-                        value={activeJourney.customResponse}
-                        onChange={(e) =>
-                          updateActiveJourney({
-                            customResponse: e.target.value,
-                            customResponseConfirmed: false,
-                          })
-                        }
+                        value={draftCustomResponse || activeJourney.customResponse}
+                        onChange={(e) => setDraftCustomResponse(e.target.value)}
                         style={{
                           width: "100%",
                           minHeight: "120px",
@@ -2498,8 +2525,13 @@ useEffect(() => {
                       />
                       <ConfirmTextButton
                         confirmed={Boolean(activeJourney.customResponseConfirmed)}
-                        disabled={activeJourney.customResponse.trim().length === 0}
-                        onConfirm={() => updateActiveJourney({ customResponseConfirmed: true })}
+                        disabled={(draftCustomResponse || activeJourney.customResponse).trim().length === 0}
+                        onConfirm={() =>
+                          updateActiveJourney({
+                            customResponse: draftCustomResponse || activeJourney.customResponse,
+                            customResponseConfirmed: true,
+                          })
+                        }
                         label="Confirm this response"
                         confirmedLabel="✓ Response confirmed"
                       />
@@ -2526,13 +2558,8 @@ useEffect(() => {
 
                       <textarea
                         placeholder="Optional: What draws you to this response?"
-                        value={activeJourney.responseReflection}
-                        onChange={(e) =>
-                          updateActiveJourney({
-                            responseReflection: e.target.value,
-                            responseReflectionConfirmed: false,
-                          })
-                        }
+                        value={draftResponseReflection || activeJourney.responseReflection}
+                        onChange={(e) => setDraftResponseReflection(e.target.value)}
                         style={{
                           width: "100%",
                           minHeight: "130px",
@@ -2546,9 +2573,10 @@ useEffect(() => {
                       />
                       <ConfirmTextButton
                         confirmed={Boolean(activeJourney.responseReflectionConfirmed)}
-                        disabled={activeJourney.responseReflection.trim().length === 0}
+                        disabled={(draftResponseReflection || activeJourney.responseReflection).trim().length === 0}
                         onConfirm={() =>
                           updateActiveJourney({
+                            responseReflection: draftResponseReflection || activeJourney.responseReflection,
                             responseReflectionConfirmed: true,
                             responseSharedAloud: false,
                           })
@@ -3209,13 +3237,8 @@ useEffect(() => {
 
                       <textarea
                         placeholder="What belief do you choose now?"
-                        value={activeJourney.customFinalBelief}
-                        onChange={(e) =>
-                          updateActiveJourney({
-                            customFinalBelief: e.target.value,
-                            customFinalBeliefConfirmed: false,
-                          })
-                        }
+                        value={draftCustomFinalBelief || activeJourney.customFinalBelief}
+                        onChange={(e) => setDraftCustomFinalBelief(e.target.value)}
                         style={{
                           width: "100%",
                           minHeight: "120px",
@@ -3226,6 +3249,18 @@ useEffect(() => {
                           resize: "vertical",
                           background: "#fffdf8",
                         }}
+                      />
+                      <ConfirmTextButton
+                        confirmed={Boolean(activeJourney.customFinalBeliefConfirmed)}
+                        disabled={(draftCustomFinalBelief || activeJourney.customFinalBelief).trim().length === 0}
+                        onConfirm={() =>
+                          updateActiveJourney({
+                            customFinalBelief: draftCustomFinalBelief || activeJourney.customFinalBelief,
+                            customFinalBeliefConfirmed: true,
+                          })
+                        }
+                        label="Confirm this belief"
+                        confirmedLabel="✓ Belief confirmed"
                       />
                     </div>
                   )}
@@ -3298,13 +3333,8 @@ useEffect(() => {
 
                             <textarea
                               placeholder="What emotion feels true now?"
-                              value={activeJourney.customFinalEmotion}
-                              onChange={(e) =>
-                                updateActiveJourney({
-                                  customFinalEmotion: e.target.value,
-                                    customFinalEmotionConfirmed: false,
-                                })
-                              }
+                              value={draftCustomFinalEmotion || activeJourney.customFinalEmotion}
+                              onChange={(e) => setDraftCustomFinalEmotion(e.target.value)}
                               style={{
                                 width: "100%",
                                 minHeight: "100px",
@@ -3318,8 +3348,13 @@ useEffect(() => {
                             />
                             <ConfirmTextButton
                               confirmed={Boolean(activeJourney.customFinalEmotionConfirmed)}
-                              disabled={activeJourney.customFinalEmotion.trim().length === 0}
-                              onConfirm={() => updateActiveJourney({ customFinalEmotionConfirmed: true })}
+                              disabled={(draftCustomFinalEmotion || activeJourney.customFinalEmotion).trim().length === 0}
+                              onConfirm={() =>
+                                updateActiveJourney({
+                                  customFinalEmotion: draftCustomFinalEmotion || activeJourney.customFinalEmotion,
+                                  customFinalEmotionConfirmed: true,
+                                })
+                              }
                               label="Confirm this emotion"
                               confirmedLabel="✓ Emotion confirmed"
                             />
@@ -3554,13 +3589,8 @@ useEffect(() => {
 
                       <textarea
                         placeholder="What response do you choose now?"
-                        value={activeJourney.customFinalResponse}
-                        onChange={(e) =>
-                          updateActiveJourney({
-                            customFinalResponse: e.target.value,
-                            customFinalResponseConfirmed: false,
-                          })
-                        }
+                        value={draftCustomFinalResponse || activeJourney.customFinalResponse}
+                        onChange={(e) => setDraftCustomFinalResponse(e.target.value)}
                         style={{
                           width: "100%",
                           minHeight: "120px",
@@ -3574,8 +3604,13 @@ useEffect(() => {
                       />
                       <ConfirmTextButton
                         confirmed={Boolean(activeJourney.customFinalResponseConfirmed)}
-                        disabled={activeJourney.customFinalResponse.trim().length === 0}
-                        onConfirm={() => updateActiveJourney({ customFinalResponseConfirmed: true })}
+                        disabled={(draftCustomFinalResponse || activeJourney.customFinalResponse).trim().length === 0}
+                        onConfirm={() =>
+                          updateActiveJourney({
+                            customFinalResponse: draftCustomFinalResponse || activeJourney.customFinalResponse,
+                            customFinalResponseConfirmed: true,
+                          })
+                        }
                         label="Confirm this final response"
                         confirmedLabel="✓ Final response confirmed"
                       />
@@ -3806,10 +3841,8 @@ useEffect(() => {
 
                     <textarea
                       placeholder="What are you noticing now?"
-                      value={activeJourney.reflectionText}
-                      onChange={(e) =>
-                        updateActiveJourney({ reflectionText: e.target.value, reflectionTextConfirmed: false })
-                      }
+                      value={draftReflectionText || activeJourney.reflectionText}
+                      onChange={(e) => setDraftReflectionText(e.target.value)}
                       style={{
                         width: "100%",
                         minHeight: "160px",
@@ -3824,9 +3857,10 @@ useEffect(() => {
                     />
                     <ConfirmTextButton
                       confirmed={Boolean(activeJourney.reflectionTextConfirmed)}
-                      disabled={activeJourney.reflectionText.trim().length === 0}
+                      disabled={(draftReflectionText || activeJourney.reflectionText).trim().length === 0}
                       onConfirm={() =>
                         updateActiveJourney({
+                          reflectionText: draftReflectionText || activeJourney.reflectionText,
                           reflectionTextConfirmed: true,
                           reflectionSharedAloud: false,
                         })
