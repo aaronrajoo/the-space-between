@@ -1532,31 +1532,34 @@ export default function Home() {
 
     const allPlayersChoseEmotion =
       journeysReady &&
-      multiplayerJourneys.every(
-        (journey) =>
+      multiplayerJourneys.every((journey) =>
+        Boolean(
           journey.emotion &&
-          (journey.emotion !== EMOTION_WILD_CARD_ID ||
-            journey.customEmotion.trim().length > 0 &&
-            journey.customEmotionConfirmed),
+            (journey.emotion !== EMOTION_WILD_CARD_ID ||
+              (journey.customEmotion.trim().length > 0 &&
+                Boolean(journey.customEmotionConfirmed))),
+        ),
       );
 
     const allPlayersSharedSituation =
       journeysReady &&
-      multiplayerJourneys.every(
-        (journey) =>
+      multiplayerJourneys.every((journey) =>
+        Boolean(
           (journey.situationText.trim().length > 0 &&
-          journey.situationTextConfirmed) ||
-          journey.situationSharedAloud,
+            Boolean(journey.situationTextConfirmed)) ||
+            journey.situationSharedAloud,
+        ),
       );
 
     const allPlayersChoseBelief =
       journeysReady &&
-      multiplayerJourneys.every(
-        (journey) =>
+      multiplayerJourneys.every((journey) =>
+        Boolean(
           journey.belief &&
-          (journey.belief !== BELIEF_WILD_CARD_ID ||
-            journey.customBelief.trim().length > 0 &&
-            journey.customBeliefConfirmed),
+            (journey.belief !== BELIEF_WILD_CARD_ID ||
+              (journey.customBelief.trim().length > 0 &&
+                Boolean(journey.customBeliefConfirmed))),
+        ),
       );
 
     const allPlayersDeclaredTimeline =
@@ -1565,15 +1568,16 @@ export default function Home() {
 
     const allPlayersChoseResponse =
       journeysReady &&
-      multiplayerJourneys.every(
-        (journey) =>
+      multiplayerJourneys.every((journey) =>
+        Boolean(
           journey.response &&
-          (journey.response !== RESPONSE_WILD_CARD_ID ||
-            journey.customResponse.trim().length > 0 &&
-            journey.customResponseConfirmed) &&
-          ((journey.responseReflection.trim().length > 0 &&
-            journey.responseReflectionConfirmed) ||
-            journey.responseSharedAloud),
+            (journey.response !== RESPONSE_WILD_CARD_ID ||
+              (journey.customResponse.trim().length > 0 &&
+                Boolean(journey.customResponseConfirmed))) &&
+            ((journey.responseReflection.trim().length > 0 &&
+              Boolean(journey.responseReflectionConfirmed)) ||
+              journey.responseSharedAloud),
+        ),
       );
 
     const allPlayersReadyForLevel2 =
@@ -1600,37 +1604,40 @@ export default function Home() {
 
     const allPlayersRedeclaredTimeline =
       journeysReady &&
-      multiplayerJourneys.every(
-        (journey) =>
+      multiplayerJourneys.every((journey) =>
+        Boolean(
           journey.finalBelief &&
-          (journey.finalBelief !== BELIEF_WILD_CARD_ID ||
-            journey.customFinalBelief.trim().length > 0 &&
-            journey.customFinalBeliefConfirmed) &&
-          journey.finalEmotion &&
-          (journey.finalEmotion !== EMOTION_WILD_CARD_ID ||
-            journey.customFinalEmotion.trim().length > 0 &&
-            journey.customFinalEmotionConfirmed) &&
-          journey.timelineRedeclared,
+            (journey.finalBelief !== BELIEF_WILD_CARD_ID ||
+              (journey.customFinalBelief.trim().length > 0 &&
+                Boolean(journey.customFinalBeliefConfirmed))) &&
+            journey.finalEmotion &&
+            (journey.finalEmotion !== EMOTION_WILD_CARD_ID ||
+              (journey.customFinalEmotion.trim().length > 0 &&
+                Boolean(journey.customFinalEmotionConfirmed))) &&
+            journey.timelineRedeclared,
+        ),
       );
 
     const allPlayersChoseFinalResponse =
       journeysReady &&
-      multiplayerJourneys.every(
-        (journey) =>
+      multiplayerJourneys.every((journey) =>
+        Boolean(
           journey.finalResponseConfirmed &&
-          journey.finalResponse &&
-          (journey.finalResponse !== RESPONSE_WILD_CARD_ID ||
-            journey.customFinalResponse.trim().length > 0 &&
-            journey.customFinalResponseConfirmed),
+            journey.finalResponse &&
+            (journey.finalResponse !== RESPONSE_WILD_CARD_ID ||
+              (journey.customFinalResponse.trim().length > 0 &&
+                Boolean(journey.customFinalResponseConfirmed))),
+        ),
       );
 
     const allPlayersReflected =
       journeysReady &&
-      multiplayerJourneys.every(
-        (journey) =>
+      multiplayerJourneys.every((journey) =>
+        Boolean(
           (journey.reflectionText.trim().length > 0 &&
-            journey.reflectionTextConfirmed) ||
-          journey.reflectionSharedAloud,
+            Boolean(journey.reflectionTextConfirmed)) ||
+            journey.reflectionSharedAloud,
+        ),
       );
 
     function renderPromptIntroScreen() {
@@ -1900,15 +1907,11 @@ export default function Home() {
                       if (!journey) return false;
 
                      return Boolean(
-  journey.emotion &&
-    (
-      journey.emotion !== EMOTION_WILD_CARD_ID ||
-      (
-        journey.customEmotion.trim().length > 0 &&
-        journey.customEmotionConfirmed
-      )
-    )
-);
+                        journey.emotion &&
+                          (journey.emotion !== EMOTION_WILD_CARD_ID ||
+                            (journey.customEmotion.trim().length > 0 &&
+                              Boolean(journey.customEmotionConfirmed))),
+                      );
                     }}
                   />
 
@@ -2052,10 +2055,10 @@ export default function Home() {
                     done={(index) => {
                       const journey = multiplayerJourneys[index];
                       if (!journey) return false;
-                      return (
+                      return Boolean(
                         (journey.situationText.trim().length > 0 &&
-          journey.situationTextConfirmed) ||
-                        journey.situationSharedAloud
+                          Boolean(journey.situationTextConfirmed)) ||
+                          journey.situationSharedAloud,
                       );
                     }}
                   />
@@ -2209,9 +2212,9 @@ export default function Home() {
                       if (!journey) return false;
                       return Boolean(
                         journey.belief &&
-                        (journey.belief !== BELIEF_WILD_CARD_ID ||
-                          journey.customBelief.trim().length > 0 &&
-            journey.customBeliefConfirmed),
+                          (journey.belief !== BELIEF_WILD_CARD_ID ||
+                            (journey.customBelief.trim().length > 0 &&
+                              Boolean(journey.customBeliefConfirmed))),
                       );
                     }}
                   />
@@ -2576,12 +2579,22 @@ export default function Home() {
                       const journey = multiplayerJourneys[index];
                       if (!journey) return false;
                       return Boolean(
-                        journey.response &&
-                        (journey.response !== RESPONSE_WILD_CARD_ID ||
-                          journey.customResponse.trim().length > 0) &&
-                        (journey.responseReflection.trim().length > 0 ||
-                          journey.responseSharedAloud),
-                      );
+  journey.response &&
+    (
+      journey.response !== RESPONSE_WILD_CARD_ID ||
+      (
+        journey.customResponse.trim().length > 0 &&
+        journey.customResponseConfirmed
+      )
+    ) &&
+    (
+      (
+        journey.responseReflection.trim().length > 0 &&
+        journey.responseReflectionConfirmed
+      ) ||
+      journey.responseSharedAloud
+    )
+);
                     }}
                   />
 
@@ -3192,8 +3205,8 @@ export default function Home() {
 
                   {activeJourney.finalBelief &&
                     (activeJourney.finalBelief !== BELIEF_WILD_CARD_ID ||
-                      activeJourney.customFinalBelief.trim().length > 0 &&
-                      activeJourney.customFinalBeliefConfirmed) && (
+                      (activeJourney.customFinalBelief.trim().length > 0 &&
+                        Boolean(activeJourney.customFinalBeliefConfirmed))) && (
                       <>
                         <h4 style={{ marginTop: "36px", fontSize: "22px" }}>
                           What emotion feels true now?
@@ -3287,12 +3300,12 @@ export default function Home() {
 
                   {activeJourney.finalBelief &&
                     (activeJourney.finalBelief !== BELIEF_WILD_CARD_ID ||
-                      activeJourney.customFinalBelief.trim().length > 0 &&
-                      activeJourney.customFinalBeliefConfirmed) &&
+                      (activeJourney.customFinalBelief.trim().length > 0 &&
+                        Boolean(activeJourney.customFinalBeliefConfirmed))) &&
                     activeJourney.finalEmotion &&
                     (activeJourney.finalEmotion !== EMOTION_WILD_CARD_ID ||
-                      activeJourney.customFinalEmotion.trim().length > 0 &&
-                      activeJourney.customFinalEmotionConfirmed) && (
+                      (activeJourney.customFinalEmotion.trim().length > 0 &&
+                        Boolean(activeJourney.customFinalEmotionConfirmed))) && (
                       <>
                         <div
                           style={{
@@ -3359,14 +3372,14 @@ export default function Home() {
                       if (!journey) return false;
                       return Boolean(
                         journey.finalBelief &&
-                        (journey.finalBelief !== BELIEF_WILD_CARD_ID ||
-                          journey.customFinalBelief.trim().length > 0 &&
-            journey.customFinalBeliefConfirmed) &&
-                        journey.finalEmotion &&
-                        (journey.finalEmotion !== EMOTION_WILD_CARD_ID ||
-                          journey.customFinalEmotion.trim().length > 0 &&
-            journey.customFinalEmotionConfirmed) &&
-                        journey.timelineRedeclared,
+                          (journey.finalBelief !== BELIEF_WILD_CARD_ID ||
+                            (journey.customFinalBelief.trim().length > 0 &&
+                              Boolean(journey.customFinalBeliefConfirmed))) &&
+                          journey.finalEmotion &&
+                          (journey.finalEmotion !== EMOTION_WILD_CARD_ID ||
+                            (journey.customFinalEmotion.trim().length > 0 &&
+                              Boolean(journey.customFinalEmotionConfirmed))) &&
+                          journey.timelineRedeclared,
                       );
                     }}
                   />
@@ -3538,8 +3551,8 @@ export default function Home() {
 
                   {activeJourney.finalResponse &&
                     (activeJourney.finalResponse !== RESPONSE_WILD_CARD_ID ||
-                      activeJourney.customFinalResponse.trim().length > 0 &&
-                      activeJourney.customFinalResponseConfirmed) && (
+                      (activeJourney.customFinalResponse.trim().length > 0 &&
+                        Boolean(activeJourney.customFinalResponseConfirmed))) && (
                       <div
                         style={{
                           marginTop: "32px",
@@ -3609,9 +3622,9 @@ export default function Home() {
                       return Boolean(
                         journey.finalResponseConfirmed &&
                         journey.finalResponse &&
-                        (journey.finalResponse !== RESPONSE_WILD_CARD_ID ||
-                          journey.customFinalResponse.trim().length > 0 &&
-            journey.customFinalResponseConfirmed),
+                          (journey.finalResponse !== RESPONSE_WILD_CARD_ID ||
+                            (journey.customFinalResponse.trim().length > 0 &&
+                              Boolean(journey.customFinalResponseConfirmed))),
                       );
                     }}
                   />
@@ -3826,10 +3839,10 @@ export default function Home() {
                     done={(index) => {
                       const journey = multiplayerJourneys[index];
                       if (!journey) return false;
-                      return (
+                      return Boolean(
                         (journey.reflectionText.trim().length > 0 &&
-            journey.reflectionTextConfirmed) ||
-                        journey.reflectionSharedAloud
+                          Boolean(journey.reflectionTextConfirmed)) ||
+                          journey.reflectionSharedAloud,
                       );
                     }}
                   />
