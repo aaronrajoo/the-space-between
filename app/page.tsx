@@ -601,7 +601,12 @@ export default function Home() {
       supabase.removeChannel(beliefOffersChannel);
     };
   }, [roomCode]);
-
+useEffect(() => {
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth",
+  });
+}, [multiplayerStep, currentStep, promptReadAloudStep]);
   const cardButtonStyle = (isSelected: boolean) => ({
     border: isSelected
       ? "4px solid #0f766e"
