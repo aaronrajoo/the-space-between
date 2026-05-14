@@ -1899,12 +1899,16 @@ export default function Home() {
 
                       if (!journey) return false;
 
-                      return Boolean(
-                        journey.emotion &&
-                        (journey.emotion !== EMOTION_WILD_CARD_ID ||
-                          journey.customEmotion.trim().length > 0 &&
-            journey.customEmotionConfirmed),
-                      );
+                     return Boolean(
+  journey.emotion &&
+    (
+      journey.emotion !== EMOTION_WILD_CARD_ID ||
+      (
+        journey.customEmotion.trim().length > 0 &&
+        journey.customEmotionConfirmed
+      )
+    )
+);
                     }}
                   />
 
