@@ -441,7 +441,17 @@ useEffect(() => {
     await loadPlayerJourneys(session.roomCode, players);
     await loadBeliefOffers(session.roomCode);
 
-    setMode("multi");
+    const { data: roomData } = await supabase
+  .from("rooms")
+  .select("current_step")
+  .eq("room_code", session.roomCode)
+  .single();
+
+if ((roomData?.current_step ?? -1) < 0) {
+  setMode("multiLobby");
+} else {
+  setMode("multi");
+}
   }
 
   checkSavedSession();
