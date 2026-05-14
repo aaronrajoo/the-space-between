@@ -23,25 +23,34 @@ const RESPONSE_WILD_CARD_ID = "response_wild_card";
 type PlayerJourney = {
   emotion: string | null;
   customEmotion: string;
+  customEmotionConfirmed: boolean;
   situationText: string;
+  situationTextConfirmed: boolean;
   situationSharedAloud: boolean;
   belief: string | null;
   customBelief: string;
+  customBeliefConfirmed: boolean;
   timelineDeclared: boolean;
   response: string | null;
   customResponse: string;
+  customResponseConfirmed: boolean;
   responseReflection: string;
+  responseReflectionConfirmed: boolean;
   responseSharedAloud: boolean;
   readyForLevel2: boolean;
   finalBelief: string | null;
   customFinalBelief: string;
+  customFinalBeliefConfirmed: boolean;
   finalEmotion: string | null;
   customFinalEmotion: string;
+  customFinalEmotionConfirmed: boolean;
   timelineRedeclared: boolean;
   finalResponse: string | null;
   finalResponseConfirmed: boolean;
   customFinalResponse: string;
+  customFinalResponseConfirmed: boolean;
   reflectionText: string;
+  reflectionTextConfirmed: boolean;
   reflectionSharedAloud: boolean;
 };
 type RoomPlayer = {
@@ -63,25 +72,34 @@ function createEmptyJourney(): PlayerJourney {
   return {
     emotion: null,
     customEmotion: "",
+    customEmotionConfirmed: false,
     situationText: "",
+    situationTextConfirmed: false,
     situationSharedAloud: false,
     belief: null,
     customBelief: "",
+    customBeliefConfirmed: false,
     timelineDeclared: false,
     response: null,
     customResponse: "",
+    customResponseConfirmed: false,
     responseReflection: "",
+    responseReflectionConfirmed: false,
     responseSharedAloud: false,
     readyForLevel2: false,
     finalBelief: null,
     customFinalBelief: "",
+    customFinalBeliefConfirmed: false,
     finalEmotion: null,
     customFinalEmotion: "",
+    customFinalEmotionConfirmed: false,
     timelineRedeclared: false,
     finalResponse: null,
     finalResponseConfirmed: false,
     customFinalResponse: "",
+    customFinalResponseConfirmed: false,
     reflectionText: "",
+    reflectionTextConfirmed: false,
     reflectionSharedAloud: false,
   };
 }
@@ -752,6 +770,41 @@ export default function Home() {
       </div>
     );
   }
+
+  function ConfirmTextButton({
+    confirmed,
+    disabled,
+    onConfirm,
+    label,
+    confirmedLabel,
+  }: {
+    confirmed: boolean;
+    disabled?: boolean;
+    onConfirm: () => void;
+    label: string;
+    confirmedLabel: string;
+  }) {
+    return (
+      <button
+        onClick={onConfirm}
+        disabled={Boolean(disabled)}
+        style={{
+          marginTop: "14px",
+          padding: "12px 18px",
+          borderRadius: "999px",
+          border: confirmed ? "2px solid #0f766e" : "2px solid #d8d2c4",
+          background: confirmed ? "#ccfbf1" : "#fffdf8",
+          color: confirmed ? "#115e59" : "#52606d",
+          fontWeight: "bold",
+          cursor: disabled ? "not-allowed" : "pointer",
+          opacity: disabled ? 0.45 : 1,
+        }}
+      >
+        {confirmed ? confirmedLabel : label}
+      </button>
+    );
+  }
+
   function StepHeader({ title, label }: { title: string; label: string }) {
     return (
       <div
@@ -1483,14 +1536,16 @@ export default function Home() {
         (journey) =>
           journey.emotion &&
           (journey.emotion !== EMOTION_WILD_CARD_ID ||
-            journey.customEmotion.trim().length > 0),
+            journey.customEmotion.trim().length > 0 &&
+            journey.customEmotionConfirmed),
       );
 
     const allPlayersSharedSituation =
       journeysReady &&
       multiplayerJourneys.every(
         (journey) =>
-          journey.situationText.trim().length > 0 ||
+          (journey.situationText.trim().length > 0 &&
+          journey.situationTextConfirmed) ||
           journey.situationSharedAloud,
       );
 
@@ -1500,7 +1555,8 @@ export default function Home() {
         (journey) =>
           journey.belief &&
           (journey.belief !== BELIEF_WILD_CARD_ID ||
-            journey.customBelief.trim().length > 0),
+            journey.customBelief.trim().length > 0 &&
+            journey.customBeliefConfirmed),
       );
 
     const allPlayersDeclaredTimeline =
@@ -1513,8 +1569,10 @@ export default function Home() {
         (journey) =>
           journey.response &&
           (journey.response !== RESPONSE_WILD_CARD_ID ||
-            journey.customResponse.trim().length > 0) &&
-          (journey.responseReflection.trim().length > 0 ||
+            journey.customResponse.trim().length > 0 &&
+            journey.customResponseConfirmed) &&
+          ((journey.responseReflection.trim().length > 0 &&
+            journey.responseReflectionConfirmed) ||
             journey.responseSharedAloud),
       );
 
@@ -1546,10 +1604,12 @@ export default function Home() {
         (journey) =>
           journey.finalBelief &&
           (journey.finalBelief !== BELIEF_WILD_CARD_ID ||
-            journey.customFinalBelief.trim().length > 0) &&
+            journey.customFinalBelief.trim().length > 0 &&
+            journey.customFinalBeliefConfirmed) &&
           journey.finalEmotion &&
           (journey.finalEmotion !== EMOTION_WILD_CARD_ID ||
-            journey.customFinalEmotion.trim().length > 0) &&
+            journey.customFinalEmotion.trim().length > 0 &&
+            journey.customFinalEmotionConfirmed) &&
           journey.timelineRedeclared,
       );
 
@@ -1560,14 +1620,16 @@ export default function Home() {
           journey.finalResponseConfirmed &&
           journey.finalResponse &&
           (journey.finalResponse !== RESPONSE_WILD_CARD_ID ||
-            journey.customFinalResponse.trim().length > 0),
+            journey.customFinalResponse.trim().length > 0 &&
+            journey.customFinalResponseConfirmed),
       );
 
     const allPlayersReflected =
       journeysReady &&
       multiplayerJourneys.every(
         (journey) =>
-          journey.reflectionText.trim().length > 0 ||
+          (journey.reflectionText.trim().length > 0 &&
+            journey.reflectionTextConfirmed) ||
           journey.reflectionSharedAloud,
       );
 
@@ -1775,6 +1837,7 @@ export default function Home() {
                               card.id === EMOTION_WILD_CARD_ID
                                 ? activeJourney.customEmotion
                                 : "",
+                            customEmotionConfirmed: false,
                           })
                         }
                         style={cardButtonStyle(
@@ -1805,7 +1868,7 @@ export default function Home() {
                         placeholder="What emotion are you feeling?"
                         value={activeJourney.customEmotion}
                         onChange={(e) =>
-                          updateActiveJourney({ customEmotion: e.target.value })
+                          updateActiveJourney({ customEmotion: e.target.value, customEmotionConfirmed: false })
                         }
                         style={{
                           width: "100%",
@@ -1817,6 +1880,13 @@ export default function Home() {
                           resize: "vertical",
                           background: "#fffdf8",
                         }}
+                      />
+                      <ConfirmTextButton
+                        confirmed={Boolean(activeJourney.customEmotionConfirmed)}
+                        disabled={activeJourney.customEmotion.trim().length === 0}
+                        onConfirm={() => updateActiveJourney({ customEmotionConfirmed: true })}
+                        label="Confirm this emotion"
+                        confirmedLabel="✓ Emotion confirmed"
                       />
                     </div>
                   )}
@@ -1832,7 +1902,8 @@ export default function Home() {
                       return Boolean(
                         journey.emotion &&
                         (journey.emotion !== EMOTION_WILD_CARD_ID ||
-                          journey.customEmotion.trim().length > 0),
+                          journey.customEmotion.trim().length > 0 &&
+            journey.customEmotionConfirmed),
                       );
                     }}
                   />
@@ -1914,7 +1985,7 @@ export default function Home() {
                       placeholder="Optional: type what happened here..."
                       value={activeJourney.situationText}
                       onChange={(e) =>
-                        updateActiveJourney({ situationText: e.target.value })
+                        updateActiveJourney({ situationText: e.target.value, situationTextConfirmed: false })
                       }
                       style={{
                         width: "100%",
@@ -1927,12 +1998,25 @@ export default function Home() {
                         background: "#fffdf8",
                       }}
                     />
+                    <ConfirmTextButton
+                      confirmed={Boolean(activeJourney.situationTextConfirmed)}
+                      disabled={activeJourney.situationText.trim().length === 0}
+                      onConfirm={() =>
+                        updateActiveJourney({
+                          situationTextConfirmed: true,
+                          situationSharedAloud: false,
+                        })
+                      }
+                      label="Confirm typed situation"
+                      confirmedLabel="✓ Situation confirmed"
+                    />
 
                     <button
                       onClick={() =>
                         updateActiveJourney({
                           situationSharedAloud:
                             !activeJourney.situationSharedAloud,
+                          situationTextConfirmed: false,
                         })
                       }
                       style={{
@@ -1965,7 +2049,8 @@ export default function Home() {
                       const journey = multiplayerJourneys[index];
                       if (!journey) return false;
                       return (
-                        journey.situationText.trim().length > 0 ||
+                        (journey.situationText.trim().length > 0 &&
+          journey.situationTextConfirmed) ||
                         journey.situationSharedAloud
                       );
                     }}
@@ -2058,6 +2143,7 @@ export default function Home() {
                               card.id === BELIEF_WILD_CARD_ID
                                 ? activeJourney.customBelief
                                 : "",
+                            customBeliefConfirmed: false,
                           })
                         }
                         style={cardButtonStyle(
@@ -2088,7 +2174,7 @@ export default function Home() {
                         placeholder="What story are you telling yourself?"
                         value={activeJourney.customBelief}
                         onChange={(e) =>
-                          updateActiveJourney({ customBelief: e.target.value })
+                          updateActiveJourney({ customBelief: e.target.value, customBeliefConfirmed: false })
                         }
                         style={{
                           width: "100%",
@@ -2100,6 +2186,13 @@ export default function Home() {
                           resize: "vertical",
                           background: "#fffdf8",
                         }}
+                      />
+                      <ConfirmTextButton
+                        confirmed={Boolean(activeJourney.customBeliefConfirmed)}
+                        disabled={activeJourney.customBelief.trim().length === 0}
+                        onConfirm={() => updateActiveJourney({ customBeliefConfirmed: true })}
+                        label="Confirm this belief"
+                        confirmedLabel="✓ Belief confirmed"
                       />
                     </div>
                   )}
@@ -2113,7 +2206,8 @@ export default function Home() {
                       return Boolean(
                         journey.belief &&
                         (journey.belief !== BELIEF_WILD_CARD_ID ||
-                          journey.customBelief.trim().length > 0),
+                          journey.customBelief.trim().length > 0 &&
+            journey.customBeliefConfirmed),
                       );
                     }}
                   />
@@ -2329,6 +2423,8 @@ export default function Home() {
                               card.id === RESPONSE_WILD_CARD_ID
                                 ? activeJourney.customResponse
                                 : "",
+                            customResponseConfirmed: false,
+                            responseReflectionConfirmed: false,
                           })
                         }
                         style={cardButtonStyle(
@@ -2362,6 +2458,7 @@ export default function Home() {
                         onChange={(e) =>
                           updateActiveJourney({
                             customResponse: e.target.value,
+                            customResponseConfirmed: false,
                           })
                         }
                         style={{
@@ -2374,6 +2471,13 @@ export default function Home() {
                           resize: "vertical",
                           background: "#fffdf8",
                         }}
+                      />
+                      <ConfirmTextButton
+                        confirmed={Boolean(activeJourney.customResponseConfirmed)}
+                        disabled={activeJourney.customResponse.trim().length === 0}
+                        onConfirm={() => updateActiveJourney({ customResponseConfirmed: true })}
+                        label="Confirm this response"
+                        confirmedLabel="✓ Response confirmed"
                       />
                     </div>
                   )}
@@ -2402,6 +2506,7 @@ export default function Home() {
                         onChange={(e) =>
                           updateActiveJourney({
                             responseReflection: e.target.value,
+                            responseReflectionConfirmed: false,
                           })
                         }
                         style={{
@@ -2415,12 +2520,25 @@ export default function Home() {
                           background: "#fffdf8",
                         }}
                       />
+                      <ConfirmTextButton
+                        confirmed={Boolean(activeJourney.responseReflectionConfirmed)}
+                        disabled={activeJourney.responseReflection.trim().length === 0}
+                        onConfirm={() =>
+                          updateActiveJourney({
+                            responseReflectionConfirmed: true,
+                            responseSharedAloud: false,
+                          })
+                        }
+                        label="Confirm typed reflection"
+                        confirmedLabel="✓ Reflection confirmed"
+                      />
 
                       <button
                         onClick={() =>
                           updateActiveJourney({
                             responseSharedAloud:
                               !activeJourney.responseSharedAloud,
+                            responseReflectionConfirmed: false,
                           })
                         }
                         style={{
@@ -2869,11 +2987,13 @@ export default function Home() {
                                       journey.belief === BELIEF_WILD_CARD_ID
                                         ? journey.customBelief
                                         : "",
+                                    customFinalBeliefConfirmed: false,
                                     finalEmotion: journey.emotion,
                                     customFinalEmotion:
                                       journey.emotion === EMOTION_WILD_CARD_ID
                                         ? journey.customEmotion
                                         : "",
+                                    customFinalEmotionConfirmed: false,
                                     timelineRedeclared: false,
                                   })),
                                 );
@@ -2988,6 +3108,7 @@ export default function Home() {
                                   card.id === BELIEF_WILD_CARD_ID
                                     ? activeJourney.customFinalBelief
                                     : "",
+                                customFinalBeliefConfirmed: false,
                               })
                             }
                             style={cardButtonStyle(isSelected)}
@@ -3048,6 +3169,7 @@ export default function Home() {
                         onChange={(e) =>
                           updateActiveJourney({
                             customFinalBelief: e.target.value,
+                            customFinalBeliefConfirmed: false,
                           })
                         }
                         style={{
@@ -3066,7 +3188,8 @@ export default function Home() {
 
                   {activeJourney.finalBelief &&
                     (activeJourney.finalBelief !== BELIEF_WILD_CARD_ID ||
-                      activeJourney.customFinalBelief.trim().length > 0) && (
+                      activeJourney.customFinalBelief.trim().length > 0 &&
+                      activeJourney.customFinalBeliefConfirmed) && (
                       <>
                         <h4 style={{ marginTop: "36px", fontSize: "22px" }}>
                           What emotion feels true now?
@@ -3096,6 +3219,7 @@ export default function Home() {
                                     card.id === EMOTION_WILD_CARD_ID
                                       ? activeJourney.customFinalEmotion
                                       : "",
+                                  customFinalEmotionConfirmed: false,
                                 })
                               }
                               style={cardButtonStyle(
@@ -3131,6 +3255,7 @@ export default function Home() {
                               onChange={(e) =>
                                 updateActiveJourney({
                                   customFinalEmotion: e.target.value,
+                                    customFinalEmotionConfirmed: false,
                                 })
                               }
                               style={{
@@ -3144,6 +3269,13 @@ export default function Home() {
                                 background: "#fffdf8",
                               }}
                             />
+                            <ConfirmTextButton
+                              confirmed={Boolean(activeJourney.customFinalEmotionConfirmed)}
+                              disabled={activeJourney.customFinalEmotion.trim().length === 0}
+                              onConfirm={() => updateActiveJourney({ customFinalEmotionConfirmed: true })}
+                              label="Confirm this emotion"
+                              confirmedLabel="✓ Emotion confirmed"
+                            />
                           </div>
                         )}
                       </>
@@ -3151,10 +3283,12 @@ export default function Home() {
 
                   {activeJourney.finalBelief &&
                     (activeJourney.finalBelief !== BELIEF_WILD_CARD_ID ||
-                      activeJourney.customFinalBelief.trim().length > 0) &&
+                      activeJourney.customFinalBelief.trim().length > 0 &&
+                      activeJourney.customFinalBeliefConfirmed) &&
                     activeJourney.finalEmotion &&
                     (activeJourney.finalEmotion !== EMOTION_WILD_CARD_ID ||
-                      activeJourney.customFinalEmotion.trim().length > 0) && (
+                      activeJourney.customFinalEmotion.trim().length > 0 &&
+                      activeJourney.customFinalEmotionConfirmed) && (
                       <>
                         <div
                           style={{
@@ -3222,10 +3356,12 @@ export default function Home() {
                       return Boolean(
                         journey.finalBelief &&
                         (journey.finalBelief !== BELIEF_WILD_CARD_ID ||
-                          journey.customFinalBelief.trim().length > 0) &&
+                          journey.customFinalBelief.trim().length > 0 &&
+            journey.customFinalBeliefConfirmed) &&
                         journey.finalEmotion &&
                         (journey.finalEmotion !== EMOTION_WILD_CARD_ID ||
-                          journey.customFinalEmotion.trim().length > 0) &&
+                          journey.customFinalEmotion.trim().length > 0 &&
+            journey.customFinalEmotionConfirmed) &&
                         journey.timelineRedeclared,
                       );
                     }}
@@ -3261,6 +3397,7 @@ export default function Home() {
                                           RESPONSE_WILD_CARD_ID
                                         ? journey.customResponse
                                         : "",
+                                  customFinalResponseConfirmed: false,
                                 })),
                               );
 
@@ -3337,6 +3474,7 @@ export default function Home() {
                               card.id === RESPONSE_WILD_CARD_ID
                                 ? activeJourney.customFinalResponse
                                 : "",
+                            customFinalResponseConfirmed: false,
                           })
                         }
                         style={cardButtonStyle(
@@ -3370,6 +3508,7 @@ export default function Home() {
                         onChange={(e) =>
                           updateActiveJourney({
                             customFinalResponse: e.target.value,
+                            customFinalResponseConfirmed: false,
                           })
                         }
                         style={{
@@ -3383,12 +3522,20 @@ export default function Home() {
                           background: "#fffdf8",
                         }}
                       />
+                      <ConfirmTextButton
+                        confirmed={Boolean(activeJourney.customFinalResponseConfirmed)}
+                        disabled={activeJourney.customFinalResponse.trim().length === 0}
+                        onConfirm={() => updateActiveJourney({ customFinalResponseConfirmed: true })}
+                        label="Confirm this final response"
+                        confirmedLabel="✓ Final response confirmed"
+                      />
                     </div>
                   )}
 
                   {activeJourney.finalResponse &&
                     (activeJourney.finalResponse !== RESPONSE_WILD_CARD_ID ||
-                      activeJourney.customFinalResponse.trim().length > 0) && (
+                      activeJourney.customFinalResponse.trim().length > 0 &&
+                      activeJourney.customFinalResponseConfirmed) && (
                       <div
                         style={{
                           marginTop: "32px",
@@ -3459,7 +3606,8 @@ export default function Home() {
                         journey.finalResponseConfirmed &&
                         journey.finalResponse &&
                         (journey.finalResponse !== RESPONSE_WILD_CARD_ID ||
-                          journey.customFinalResponse.trim().length > 0),
+                          journey.customFinalResponse.trim().length > 0 &&
+            journey.customFinalResponseConfirmed),
                       );
                     }}
                   />
@@ -3610,7 +3758,7 @@ export default function Home() {
                       placeholder="What are you noticing now?"
                       value={activeJourney.reflectionText}
                       onChange={(e) =>
-                        updateActiveJourney({ reflectionText: e.target.value })
+                        updateActiveJourney({ reflectionText: e.target.value, reflectionTextConfirmed: false })
                       }
                       style={{
                         width: "100%",
@@ -3624,12 +3772,25 @@ export default function Home() {
                         background: "#fffdf8",
                       }}
                     />
+                    <ConfirmTextButton
+                      confirmed={Boolean(activeJourney.reflectionTextConfirmed)}
+                      disabled={activeJourney.reflectionText.trim().length === 0}
+                      onConfirm={() =>
+                        updateActiveJourney({
+                          reflectionTextConfirmed: true,
+                          reflectionSharedAloud: false,
+                        })
+                      }
+                      label="Confirm typed reflection"
+                      confirmedLabel="✓ Reflection confirmed"
+                    />
 
                     <button
                       onClick={() =>
                         updateActiveJourney({
                           reflectionSharedAloud:
                             !activeJourney.reflectionSharedAloud,
+                          reflectionTextConfirmed: false,
                         })
                       }
                       style={{
@@ -3662,7 +3823,8 @@ export default function Home() {
                       const journey = multiplayerJourneys[index];
                       if (!journey) return false;
                       return (
-                        journey.reflectionText.trim().length > 0 ||
+                        (journey.reflectionText.trim().length > 0 &&
+            journey.reflectionTextConfirmed) ||
                         journey.reflectionSharedAloud
                       );
                     }}
