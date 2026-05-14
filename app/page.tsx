@@ -1606,7 +1606,29 @@ useEffect(() => {
 
     const currentReceiver =
       joinedPlayers[currentReceiverIndex]?.player_name || "Player";
+const receiverJourney =
+  multiplayerJourneys[currentReceiverIndex] ?? createEmptyJourney();
 
+const receiverEmotionText =
+  receiverJourney.emotion === EMOTION_WILD_CARD_ID
+    ? receiverJourney.customEmotion
+    : emotionCards.find(
+        (card) => card.id === receiverJourney.emotion,
+      )?.title;
+
+const receiverBeliefText =
+  receiverJourney.belief === BELIEF_WILD_CARD_ID
+    ? receiverJourney.customBelief
+    : beliefCards.find(
+        (card) => card.id === receiverJourney.belief,
+      )?.title;
+
+const receiverResponseText =
+  receiverJourney.response === RESPONSE_WILD_CARD_ID
+    ? receiverJourney.customResponse
+    : responseCards.find(
+        (card) => card.id === receiverJourney.response,
+      )?.title;
     const isActivePlayerReceiver = myPlayerIndex === currentReceiverIndex;
 
     const activePlayerOffer: BeliefOffer | undefined = beliefOffers.find(
@@ -1817,17 +1839,31 @@ useEffect(() => {
 <div
   style={{
     marginTop: "14px",
-    marginBottom: "22px",
-    padding: "16px 18px",
-    borderRadius: "20px",
-    background: "#fffdf8",
-    border: "2px solid #d8d2c4",
-    fontSize: "15px",
-    lineHeight: 1.6,
-    color: "#52606d",
+  marginBottom: "22px",
+  padding: "18px 20px",
+  borderRadius: "22px",
+  background:
+    "linear-gradient(135deg, rgba(224,247,250,0.95), rgba(236,253,245,0.92))",
+  border: "2px solid rgba(14,116,144,0.18)",
+  boxShadow: "0 10px 24px rgba(14,116,144,0.10)",
+  fontSize: "15px",
+  lineHeight: 1.7,
+  color: "#164e63",
+  backdropFilter: "blur(8px)",
   }}
 >
-  <strong>My Timeline:</strong>{" "}
+ <div
+  style={{
+    marginBottom: "10px",
+    fontWeight: "bold",
+    fontSize: "13px",
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+    color: "#0f766e",
+  }}
+>
+  My Timeline
+</div>{" "}
   [
   Situation:{" "}
   <strong>{activeJourney.situationText || "Not chosen yet"}</strong>
@@ -2815,7 +2851,41 @@ useEffect(() => {
                     title="Step 6 — Alternative Beliefs"
                     label={`Receiving: ${currentReceiver}`}
                   />
+<div
+  style={{
+    marginTop: "18px",
+    marginBottom: "24px",
+    padding: "18px",
+    borderRadius: "20px",
+    background: "#f8fafc",
+    border: "2px solid #94a3b8",
+    fontSize: "15px",
+    lineHeight: 1.6,
+    color: "#334155",
+  }}
+>
+  <p
+    style={{
+      marginTop: 0,
+      marginBottom: "10px",
+      fontWeight: "bold",
+      color: "#0f172a",
+    }}
+  >
+    Receiver’s Timeline: {currentReceiver}
+  </p>
 
+  <p style={{ margin: 0 }}>
+  Situation:{" "}
+  <strong>{receiverJourney.situationText || "Not shared yet"}</strong>
+  {" "}– Belief:{" "}
+  <strong>{receiverBeliefText || "Not chosen yet"}</strong>
+  {" "}– Emotion:{" "}
+  <strong>{receiverEmotionText || "Not chosen yet"}</strong>
+  {" "}– Response:{" "}
+  <strong>{receiverResponseText || "Not chosen yet"}</strong>
+</p>
+</div>
                   <p
                     style={{
                       fontSize: "18px",
