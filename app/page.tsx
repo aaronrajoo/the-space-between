@@ -53,7 +53,12 @@ type BeliefOffer = {
   giverIndex: number;
   beliefId: string;
 };
-
+type SavedPlayerSession = {
+  roomCode: string;
+  playerId: string;
+  playerName: string;
+  isHost: boolean;
+};
 function createEmptyJourney(): PlayerJourney {
   return {
     emotion: null,
@@ -80,7 +85,13 @@ function createEmptyJourney(): PlayerJourney {
     reflectionSharedAloud: false,
   };
 }
+function savePlayerSession(session: SavedPlayerSession) {
+  localStorage.setItem("space-between-player-session", JSON.stringify(session));
+}
 
+function clearPlayerSession() {
+  localStorage.removeItem("space-between-player-session");
+}
 export default function Home() {
   const [mode, setMode] = useState<
     "home" | "single" | "multiLobby" | "multi"
@@ -235,7 +246,7 @@ const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
   }
 function leaveRoom() {
   resetGame();
-
+  clearPlayerSession();
   setRoomCode("");
   setJoinCode("");
   setJoinError("");
@@ -357,6 +368,51 @@ async function updateCurrentReceiverIndex(index: number) {
   if (error) {
   }
 }
+useEffect(() => {
+  const saved = localStorage.getItem("space-between-player-session");
+
+  if (!saved || mode !== "home") return;
+
+  async function checkSavedSession() {
+    const session = JSON.parse(saved!) as SavedPlayerSession;
+
+    const shouldReconnect = window.confirm(
+      `Rejoin room ${session.roomCode} as ${session.playerName}?`
+    );
+
+    if (!shouldReconnect) {
+      clearPlayerSession();
+      return;
+    }
+
+    const { data: playerData, error: playerError } = await supabase
+      .from("players")
+      .select("id, player_name")
+      .eq("room_code", session.roomCode)
+      .eq("id", session.playerId)
+      .single();
+
+    if (playerError || !playerData) {
+      clearPlayerSession();
+      alert("Could not reconnect. Please join the room again.");
+      return;
+    }
+
+    setRoomCode(session.roomCode);
+    setMyPlayerId(session.playerId);
+    setPlayerName(session.playerName);
+    setIsHost(session.isHost);
+
+    const players = await loadJoinedPlayers(session.roomCode);
+    await loadRoomStep(session.roomCode);
+    await loadPlayerJourneys(session.roomCode, players);
+    await loadBeliefOffers(session.roomCode);
+
+    setMode("multi");
+  }
+
+  checkSavedSession();
+}, [mode]);
 useEffect(() => {
   if (!roomCode) return;
 
@@ -631,6 +687,26 @@ const journeysChannel = supabase
   if (mode === "home") {
     return (
       <main style={pageStyle}>
+          {roomCode && (
+    <div
+      style={{
+        position: "fixed",
+        top: "16px",
+        right: "16px",
+        zIndex: 100,
+        padding: "10px 14px",
+        borderRadius: "999px",
+        background: "#ccfbf1",
+        color: "#115e59",
+        fontWeight: "bold",
+        fontSize: "14px",
+        boxShadow: "0 8px 20px rgba(0,0,0,0.12)",
+      }}
+    >
+      Room: {roomCode}
+    </div>
+  )}
+        
         <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
           <section
             style={{
@@ -784,9 +860,16 @@ if (!error) {
     .select("id")
     .single();
 
-  if (!playerError && playerData) {
-    setMyPlayerId(playerData.id);
-  }
+ if (!playerError && playerData) {
+  setMyPlayerId(playerData.id);
+
+  savePlayerSession({
+    roomCode,
+    playerId: playerData.id,
+    playerName: hostName.trim(),
+    isHost: true,
+  });
+}
 
   await loadJoinedPlayers(roomCode);
   await loadRoomStep(roomCode);
@@ -929,7 +1012,12 @@ if (playerError || !playerData) {
 }
 
 setMyPlayerId(playerData.id);
-
+savePlayerSession({
+  roomCode: data.room_code,
+  playerId: playerData.id,
+  playerName: playerName.trim(),
+  isHost: false,
+});
 await loadJoinedPlayers(data.room_code);
 await loadRoomStep(data.room_code);
 
