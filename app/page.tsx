@@ -248,6 +248,20 @@ function leaveRoom() {
   resetGame();
   async function leaveRoom() {
   if (roomCode && myPlayerId) {
+    const leavingPlayerIndex = joinedPlayers.findIndex(
+      (player) => player.id === myPlayerId
+    );
+
+    if (leavingPlayerIndex >= 0) {
+      await supabase
+        .from("belief_offers")
+        .delete()
+        .eq("room_code", roomCode)
+        .or(
+          `giver_index.eq.${leavingPlayerIndex},receiver_index.eq.${leavingPlayerIndex}`
+        );
+    }
+
     await supabase
       .from("player_journeys")
       .delete()
@@ -470,9 +484,11 @@ initialiseRoom();
         table: "players",
         filter: `room_code=eq.${roomCode}`,
       },
-      () => {
-        loadJoinedPlayers(roomCode);
-      }
+      async () => {
+  const players = await loadJoinedPlayers(roomCode);
+  await loadPlayerJourneys(roomCode, players);
+  await loadBeliefOffers(roomCode);
+}
     )
     .subscribe();
 
