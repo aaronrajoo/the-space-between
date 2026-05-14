@@ -2576,26 +2576,28 @@ export default function Home() {
                     title="Step 5 Status"
                     players={joinedPlayers.map((player) => player.player_name)}
                     done={(index) => {
-                      const journey = multiplayerJourneys[index];
-                      if (!journey) return false;
-                      return Boolean(
-  journey.response &&
-    (
-      journey.response !== RESPONSE_WILD_CARD_ID ||
+  const journey = multiplayerJourneys[index];
+
+  if (!journey) return false;
+
+  return Boolean(
+    journey.response &&
       (
-        journey.customResponse.trim().length > 0 &&
-        journey.customResponseConfirmed
+        journey.response !== RESPONSE_WILD_CARD_ID ||
+        (
+          journey.customResponse.trim().length > 0 &&
+          journey.customResponseConfirmed
+        )
+      ) &&
+      (
+        (
+          journey.responseReflection.trim().length > 0 &&
+          journey.responseReflectionConfirmed
+        ) ||
+        journey.responseSharedAloud
       )
-    ) &&
-    (
-      (
-        journey.responseReflection.trim().length > 0 &&
-        journey.responseReflectionConfirmed
-      ) ||
-      journey.responseSharedAloud
-    )
-);
-                    }}
+  );
+}}
                   />
 
                   <div style={{ marginTop: "24px" }}>
