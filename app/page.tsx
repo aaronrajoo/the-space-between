@@ -1562,14 +1562,14 @@ useEffect(() => {
       );
 
     const allPlayersSharedSituation =
-      journeysReady &&
-      multiplayerJourneys.every((journey) =>
-        Boolean(
-          (journey.situationText.trim().length > 0 &&
-            Boolean(journey.situationTextConfirmed)) ||
-            journey.situationSharedAloud,
-        ),
-      );
+  journeysReady &&
+  multiplayerJourneys.every((journey) =>
+    Boolean(
+      journey.situationText.trim().length > 0 &&
+        Boolean(journey.situationTextConfirmed) &&
+        journey.situationSharedAloud,
+    ),
+  );
 
     const allPlayersChoseBelief =
       journeysReady &&
@@ -2069,8 +2069,7 @@ const receiverResponseText =
                     </p>
 
                     <p style={{ color: "#52606d", lineHeight: 1.6 }}>
-                      Type your situation below, or mark it as shared aloud if
-                      you are playing in person.
+                      Type one short sentence about what happened. Confirm it, then share it aloud and click “I shared this aloud”.
                     </p>
 
                     <textarea
@@ -2103,6 +2102,7 @@ const receiverResponseText =
                     />
 
                     <button
+                      disabled={!activeJourney.situationTextConfirmed}
                       onClick={() =>
                         updateActiveJourney({
                           situationSharedAloud:
@@ -2124,7 +2124,8 @@ const receiverResponseText =
                           ? "#115e59"
                           : "#52606d",
                         fontWeight: "bold",
-                        cursor: "pointer",
+                        opacity: activeJourney.situationTextConfirmed ? 1 : 0.45,
+                        cursor: activeJourney.situationTextConfirmed ? "pointer" : "not-allowed",
                       }}
                     >
                       {activeJourney.situationSharedAloud
@@ -2140,10 +2141,10 @@ const receiverResponseText =
                       const journey = multiplayerJourneys[index];
                       if (!journey) return false;
                       return Boolean(
-                        (journey.situationText.trim().length > 0 &&
-                          Boolean(journey.situationTextConfirmed)) ||
-                          journey.situationSharedAloud,
-                      );
+  journey.situationText.trim().length > 0 &&
+    Boolean(journey.situationTextConfirmed) &&
+    journey.situationSharedAloud,
+);
                     }}
                   />
 
