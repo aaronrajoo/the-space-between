@@ -3124,7 +3124,10 @@ useEffect(() => {
                         if (!card) return null;
 
                         const isSelected =
-                          activeJourney.finalBelief === card.id;
+                           (
+    activeJourney.finalBelief ||
+    activeJourney.belief
+  ) === card.id;
 
                         return (
                           <button
@@ -3251,8 +3254,11 @@ useEffect(() => {
                                 })
                               }
                               style={cardButtonStyle(
-                                activeJourney.finalEmotion === card.id,
-                              )}
+  (
+    activeJourney.finalEmotion ||
+    activeJourney.emotion
+  ) === card.id,
+)}
                             >
                               <img
                                 src={card.image}
@@ -3506,7 +3512,10 @@ useEffect(() => {
                           })
                         }
                         style={cardButtonStyle(
-                          activeJourney.finalResponse === card.id,
+                          (
+    activeJourney.finalResponse ||
+    activeJourney.response
+  ) === card.id,
                         )}
                       >
                         <img
