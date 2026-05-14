@@ -2105,11 +2105,9 @@ const receiverResponseText =
                       disabled={!activeJourney.situationTextConfirmed}
                       onClick={() =>
                         updateActiveJourney({
-                          situationSharedAloud:
-                            !activeJourney.situationSharedAloud,
-                          situationTextConfirmed: false,
-                        })
-                      }
+                          situationSharedAloud: true,
+                            })
+                        }
                       style={{
                         marginTop: "18px",
                         padding: "12px 18px",
