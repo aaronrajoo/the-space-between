@@ -244,19 +244,20 @@ const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
     setBeliefOffers([]);
     setPromptReaders([]);
   }
-function leaveRoom() {
-  resetGame();
-  async function leaveRoom() {
-  if (roomCode && myPlayerId) {
+async function leaveRoom() {
+  const leavingRoomCode = roomCode;
+  const leavingPlayerId = myPlayerId;
+
+  if (leavingRoomCode && leavingPlayerId) {
     const leavingPlayerIndex = joinedPlayers.findIndex(
-      (player) => player.id === myPlayerId
+      (player) => player.id === leavingPlayerId
     );
 
     if (leavingPlayerIndex >= 0) {
       await supabase
         .from("belief_offers")
         .delete()
-        .eq("room_code", roomCode)
+        .eq("room_code", leavingRoomCode)
         .or(
           `giver_index.eq.${leavingPlayerIndex},receiver_index.eq.${leavingPlayerIndex}`
         );
@@ -265,18 +266,17 @@ function leaveRoom() {
     await supabase
       .from("player_journeys")
       .delete()
-      .eq("room_code", roomCode)
-      .eq("player_id", myPlayerId);
+      .eq("room_code", leavingRoomCode)
+      .eq("player_id", leavingPlayerId);
 
     await supabase
       .from("players")
       .delete()
-      .eq("room_code", roomCode)
-      .eq("id", myPlayerId);
+      .eq("room_code", leavingRoomCode)
+      .eq("id", leavingPlayerId);
   }
 
   clearPlayerSession();
-
   resetGame();
 
   setRoomCode("");
@@ -295,23 +295,7 @@ function leaveRoom() {
 
   setMode("home");
 }
-  clearPlayerSession();
-  setRoomCode("");
-  setJoinCode("");
-  setJoinError("");
-  setPlayerName("");
-  setJoinedPlayers([]);
-  setMyPlayerId(null);
-  setIsHost(false);
-  setMultiplayerJourneys([]);
-  setBeliefOffers([]);
-  setPromptReaders([]);
-  setCurrentReceiverIndex(0);
-  setMultiplayerStep(0);
-  setShowClosingScreen(false);
 
-  setMode("home");
-}
   function pickPromptReaders(totalSteps: number, totalPlayers: number) {
   const readers = [];
 
