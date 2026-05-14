@@ -1509,6 +1509,21 @@ useEffect(() => {
         ? activeJourney.customFinalResponse
         : responseCards.find((card) => card.id === activeJourney.finalResponse)
             ?.title;
+    
+    const displayedBeliefText =
+      multiplayerStep >= 7
+        ? activeFinalBeliefText || activeBeliefText
+        : activeBeliefText;
+
+const displayedEmotionText =
+  multiplayerStep >= 7
+    ? activeFinalEmotionText || activeEmotionText
+    : activeEmotionText;
+
+const displayedResponseText =
+  multiplayerStep >= 8
+    ? activeFinalResponseText || activeResponseText
+    : activeResponseText;
 
     async function updateActiveJourney(updates: Partial<PlayerJourney>) {
       if (myPlayerIndex < 0 || !myPlayerId || !roomCode) return;
@@ -1868,11 +1883,11 @@ const receiverResponseText =
   Situation:{" "}
   <strong>{activeJourney.situationText || "Not chosen yet"}</strong>
   {" "}– Belief:{" "}
-  <strong>{activeBeliefText || "Not chosen yet"}</strong>
+  <strong>{displayedBeliefText || "Not chosen yet"}</strong>
   {" "}– Emotion:{" "}
-  <strong>{activeEmotionText || "Not chosen yet"}</strong>
+  <strong>{displayedEmotionText || "Not chosen yet"}</strong>
   {" "}– Response:{" "}
-  <strong>{activeResponseText || "Not chosen yet"}</strong>
+  <strong>{displayedResponseText || "Not chosen yet"}</strong>
   ]
 </div>
                 </>
