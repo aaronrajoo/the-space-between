@@ -339,7 +339,7 @@ export default function Home() {
 
     setMultiplayerStep(data.current_step);
     setCurrentReceiverIndex(data.current_receiver_index ?? 0);
-    setPromptReaders(data.prompt_readers ?? []);
+    setPromptReaders(Array.isArray(data.prompt_readers) ? data.prompt_readers : []);
     setPromptReadAloudStep(data.prompt_read_aloud_step ?? -1);
   }
   async function loadPlayerJourneys(code: string, players: RoomPlayer[]) {
@@ -381,11 +381,13 @@ export default function Home() {
     if (!roomCode) return;
 
     setMultiplayerStep(step);
+    setPromptReadAloudStep(-1);
 
     const { error } = await supabase
       .from("rooms")
       .update({
         current_step: step,
+        prompt_read_aloud_step: -1,
       })
       .eq("room_code", roomCode);
 
@@ -528,7 +530,9 @@ export default function Home() {
           };
           setMultiplayerStep(updatedRoom.current_step);
           setCurrentReceiverIndex(updatedRoom.current_receiver_index ?? 0);
-          setPromptReaders(updatedRoom.prompt_readers ?? []);
+          if (Array.isArray(updatedRoom.prompt_readers)) {
+            setPromptReaders(updatedRoom.prompt_readers);
+          }
           setPromptReadAloudStep(updatedRoom.prompt_read_aloud_step ?? -1);
 
           if (updatedRoom.current_step >= 0) {
@@ -1263,16 +1267,17 @@ export default function Home() {
                   if (joinedPlayers.length < 2 || !roomCode) return;
                   const readers = pickPromptReaders(10, joinedPlayers.length);
                   setPromptReadAloudStep(-1);
+                  setCurrentReceiverIndex(0);
+                  setMultiplayerStep(0);
                   await supabase
                     .from("rooms")
                     .update({
+                      current_step: 0,
+                      current_receiver_index: 0,
                       prompt_readers: readers,
                       prompt_read_aloud_step: -1,
-                      current_receiver_index: 0,
                     })
                     .eq("room_code", roomCode);
-                  await updateCurrentReceiverIndex(0);
-                  await updateRoomStep(0);
                   setMode("multi");
                 }}
                 disabled={joinedPlayers.length < 2}
