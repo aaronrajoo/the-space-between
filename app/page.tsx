@@ -326,15 +326,17 @@ const [draftReflectionText, setDraftReflectionText] = useState("");
   }
 
   function pickPromptReaders(totalSteps: number, totalPlayers: number) {
-    const readers: number[] = [];
+  const readers: number[] = [];
 
-    for (let i = 0; i < totalSteps; i++) {
-      readers.push(Math.floor(Math.random() * Math.max(totalPlayers, 1)));
-    }
+  const startIndex = Math.floor(Math.random() * Math.max(totalPlayers, 1));
 
-    setPromptReaders(readers);
-    return readers;
+  for (let i = 0; i < totalSteps; i++) {
+    readers.push((startIndex + i) % Math.max(totalPlayers, 1));
   }
+
+  setPromptReaders(readers);
+  return readers;
+}
 
   async function loadJoinedPlayers(code: string) {
     const { data, error } = await supabase
