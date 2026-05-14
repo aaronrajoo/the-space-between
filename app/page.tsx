@@ -3142,7 +3142,12 @@ useEffect(() => {
                                 customFinalBeliefConfirmed: false,
                               })
                             }
-                            style={cardButtonStyle(isSelected)}
+                            style={cardButtonStyle(
+  (
+    activeJourney.finalBelief ||
+    activeJourney.belief
+  ) === card.id,
+)}
                           >
                             <div
                               style={{
@@ -4234,8 +4239,8 @@ useEffect(() => {
               </p>
 
               <CardGrid
-                cardsToShow={beliefCards}
-                selectedId={selectedBelief}
+  cardsToShow={beliefCards}
+ selectedId={selectedBelief}
                 onSelect={(id) => {
                   setSelectedBelief(id);
                   if (id !== BELIEF_WILD_CARD_ID) {
