@@ -1032,7 +1032,7 @@ if (playerError || !playerData) {
   setJoinError("Could not join room. Please try again.");
   return;
 }
-
+setRoomCode(data.room_code);
 setMyPlayerId(playerData.id);
 savePlayerSession({
   roomCode: data.room_code,
