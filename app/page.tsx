@@ -246,6 +246,41 @@ const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
   }
 function leaveRoom() {
   resetGame();
+  async function leaveRoom() {
+  if (roomCode && myPlayerId) {
+    await supabase
+      .from("player_journeys")
+      .delete()
+      .eq("room_code", roomCode)
+      .eq("player_id", myPlayerId);
+
+    await supabase
+      .from("players")
+      .delete()
+      .eq("room_code", roomCode)
+      .eq("id", myPlayerId);
+  }
+
+  clearPlayerSession();
+
+  resetGame();
+
+  setRoomCode("");
+  setJoinCode("");
+  setJoinError("");
+  setPlayerName("");
+  setJoinedPlayers([]);
+  setMyPlayerId(null);
+  setIsHost(false);
+  setMultiplayerJourneys([]);
+  setBeliefOffers([]);
+  setPromptReaders([]);
+  setCurrentReceiverIndex(0);
+  setMultiplayerStep(0);
+  setShowClosingScreen(false);
+
+  setMode("home");
+}
   clearPlayerSession();
   setRoomCode("");
   setJoinCode("");
