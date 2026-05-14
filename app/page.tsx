@@ -602,10 +602,14 @@ export default function Home() {
     };
   }, [roomCode]);
 useEffect(() => {
-  window.scrollTo({
-    top: 0,
-    behavior: "smooth",
-  });
+  const stepCard = document.getElementById("step-card");
+
+  if (stepCard) {
+    stepCard.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
 }, [multiplayerStep, currentStep, promptReadAloudStep]);
   const cardButtonStyle = (isSelected: boolean) => ({
     border: isSelected
@@ -1780,7 +1784,7 @@ useEffect(() => {
             </p>
           </header>
 
-          <section style={panelStyle}>
+          <section id="step-card" style={panelStyle}>
             {showClosingScreen && renderClosingScreen(true)}
 
             {multiplayerStep === 10 && renderClosingScreen(true)}
