@@ -3308,11 +3308,8 @@ const receiverResponseText =
                         )
                         .map((offer) => ({
                           beliefId: offer.beliefId,
-                          label: "Offered belief",
-                          giver:
-                            joinedPlayers[offer.giverIndex]?.player_name ||
-                            "Player",
-                        })),
+                          label: "Alternative belief",
+                          })),
                     ]
                       .filter((item, index, array) => {
                         if (!item.beliefId) return false;
@@ -3338,7 +3335,7 @@ const receiverResponseText =
 
                         return (
                           <button
-                            key={`${item.beliefId}-${item.giver}-${index}`}
+                            key={`${item.beliefId}-${index}`}
                             onClick={() =>
                               updateActiveJourney({
                                 finalBelief: card.id,
@@ -3366,7 +3363,7 @@ const receiverResponseText =
                                 textAlign: "left",
                               }}
                             >
-                              {item.label} · {item.giver}
+                              {item.label}
                             </div>
 
                             <img
