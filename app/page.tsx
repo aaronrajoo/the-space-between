@@ -1224,6 +1224,12 @@ useEffect(() => {
               Phyllis, Cara, and Hui Qin
             </p>
 
+              <p style={{ marginBottom: "28px" }}>
+              Big thanks to my beta testers for making this game usable!
+              <br />
+              Laureen, Elise, Mei Teng, Elizabeth, Atassha and Elsa
+            </p>
+
             <p
               style={{
                 fontStyle: "italic",
