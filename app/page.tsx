@@ -2150,19 +2150,88 @@ const receiverResponseText =
                     </button>
                   </div>
 
-                  <StatusList
-                    title="Step 2 Status"
-                    players={joinedPlayers.map((player) => player.player_name)}
-                    done={(index) => {
-                      const journey = multiplayerJourneys[index];
-                      if (!journey) return false;
-                      return Boolean(
-  journey.situationText.trim().length > 0 &&
-    Boolean(journey.situationTextConfirmed) &&
-    journey.situationSharedAloud,
-);
-                    }}
-                  />
+                  <div
+  style={{
+    marginTop: "28px",
+    padding: "20px",
+    borderRadius: "20px",
+    background: "rgba(255,255,255,0.75)",
+  }}
+>
+  <h4 style={{ marginTop: 0 }}>Step 2 Status</h4>
+
+  {joinedPlayers.map((player, index) => {
+    const journey = multiplayerJourneys[index];
+
+    const typedConfirmed = Boolean(
+      journey?.situationText?.trim().length &&
+        journey?.situationTextConfirmed,
+    );
+
+    const sharedAloud = Boolean(journey?.situationSharedAloud);
+
+    return (
+      <div
+        key={player.id}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "12px",
+          padding: "10px 0",
+          borderTop:
+            index === 0 ? "none" : "1px solid rgba(148,163,184,0.35)",
+          fontSize: "17px",
+        }}
+      >
+        <span>{player.player_name}</span>
+
+        <div
+          style={{
+            display: "flex",
+            gap: "8px",
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <span
+            title="Typed and confirmed"
+            style={{
+              padding: "6px 10px",
+              borderRadius: "999px",
+              background: typedConfirmed ? "#ccfbf1" : "#f1f5f9",
+              color: typedConfirmed ? "#115e59" : "#64748b",
+              fontWeight: "bold",
+              fontSize: "13px",
+              border: typedConfirmed
+                ? "1px solid #0f766e"
+                : "1px solid #cbd5e1",
+            }}
+          >
+            {typedConfirmed ? "✓" : "○"} Typed
+          </span>
+
+          <span
+            title="Shared aloud"
+            style={{
+              padding: "6px 10px",
+              borderRadius: "999px",
+              background: sharedAloud ? "#ccfbf1" : "#f1f5f9",
+              color: sharedAloud ? "#115e59" : "#64748b",
+              fontWeight: "bold",
+              fontSize: "13px",
+              border: sharedAloud
+                ? "1px solid #0f766e"
+                : "1px solid #cbd5e1",
+            }}
+          >
+            {sharedAloud ? "✓" : "○"} Shared
+          </span>
+        </div>
+      </div>
+    );
+  })}
+</div>
 
                   <div style={{ marginTop: "24px" }}>
                     {isHost ? (
