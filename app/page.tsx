@@ -3143,8 +3143,8 @@ const receiverResponseText =
                     }}
                   >
                     <h4 style={{ marginTop: 0 }}>
-                      Offers for {currentReceiver}
-                    </h4>
+  Anonymous offers for {currentReceiver}
+</h4>
 
                     {joinedPlayers.map((player, index) => {
                       if (index === currentReceiverIndex) {
