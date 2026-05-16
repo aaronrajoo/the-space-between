@@ -170,6 +170,7 @@ const [draftCustomFinalBelief, setDraftCustomFinalBelief] = useState("");
 const [draftCustomFinalEmotion, setDraftCustomFinalEmotion] = useState("");
 const [draftCustomFinalResponse, setDraftCustomFinalResponse] = useState("");
 const [draftReflectionText, setDraftReflectionText] = useState("");
+const [draftBeliefOfferId, setDraftBeliefOfferId] = useState<string | null>(null);
 
   const selectedEmotionCard = emotionCards.find(
     (card) => card.id === selectedEmotion,
@@ -2996,49 +2997,12 @@ const receiverResponseText =
                           .map((card) => (
                             <button
                               key={card.id}
-                              onClick={async () => {
-                                if (myPlayerIndex < 0 || !roomCode) return;
-
-                                setBeliefOffers((offers) => {
-                                  const withoutCurrentOffer = offers.filter(
-                                    (offer) =>
-                                      !(
-                                        offer.receiverIndex ===
-                                          currentReceiverIndex &&
-                                        offer.giverIndex === myPlayerIndex
-                                      ),
-                                  );
-
-                                  return [
-                                    ...withoutCurrentOffer,
-                                    {
-                                      receiverIndex: currentReceiverIndex,
-                                      giverIndex: myPlayerIndex,
-                                      beliefId: card.id,
-                                    },
-                                  ];
-                                });
-
-                                const { error } = await supabase
-                                  .from("belief_offers")
-                                  .upsert(
-                                    {
-                                      room_code: roomCode,
-                                      receiver_index: currentReceiverIndex,
-                                      giver_index: myPlayerIndex,
-                                      belief_id: card.id,
-                                      updated_at: new Date().toISOString(),
-                                    },
-                                    {
-                                      onConflict:
-                                        "room_code,receiver_index,giver_index",
-                                    },
-                                  );
-
-                                if (error) {
-                                }
-                              }}
-                              style={cardButtonStyle(false)}
+                              onClick={() => {
+  setDraftBeliefOfferId(card.id);
+}}
+                              style={cardButtonStyle(
+  draftBeliefOfferId === card.id
+)}
                             >
                               <img
                                 src={card.image}
@@ -3048,6 +3012,56 @@ const receiverResponseText =
                             </button>
                           ))}
                       </div>
+                      <button
+  disabled={!draftBeliefOfferId}
+  onClick={async () => {
+  if (myPlayerIndex < 0 || !roomCode || !draftBeliefOfferId) return;
+
+  const confirmedBeliefOfferId = draftBeliefOfferId;
+
+  setBeliefOffers((offers) => {
+    const withoutCurrentOffer = offers.filter(
+      (offer) =>
+        !(
+          offer.receiverIndex === currentReceiverIndex &&
+          offer.giverIndex === myPlayerIndex
+        ),
+    );
+
+    return [
+      ...withoutCurrentOffer,
+      {
+        receiverIndex: currentReceiverIndex,
+        giverIndex: myPlayerIndex,
+        beliefId: confirmedBeliefOfferId,
+      },
+    ];
+  });
+
+  await supabase.from("belief_offers").upsert(
+    {
+      room_code: roomCode,
+      receiver_index: currentReceiverIndex,
+      giver_index: myPlayerIndex,
+      belief_id: confirmedBeliefOfferId,
+      updated_at: new Date().toISOString(),
+    },
+    {
+      onConflict: "room_code,receiver_index,giver_index",
+    },
+  );
+
+  setDraftBeliefOfferId(null);
+}}
+  style={{
+    ...primaryButtonStyle,
+    marginTop: "24px",
+    opacity: draftBeliefOfferId ? 1 : 0.45,
+    cursor: draftBeliefOfferId ? "pointer" : "not-allowed",
+  }}
+>
+  Confirm this alternative belief
+</button>
                     </>
                   )}
 
