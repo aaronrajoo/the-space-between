@@ -571,54 +571,7 @@ const [draftBeliefOfferId, setDraftBeliefOfferId] = useState<string | null>(null
             setMode("multi");
           }
 
-          if (mode === "free") {
-  return (
-    <main style={pageStyle}>
-      <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
-        <button
-          onClick={() => setMode("home")}
-          style={{ ...secondaryButtonStyle, marginBottom: "24px" }}
-        >
-          ← Back
-        </button>
-
-        <section style={panelStyle}>
-          <h1 style={{ marginTop: 0, fontSize: "42px" }}>
-            Free Exploration
-          </h1>
-
-          <p style={{ fontSize: "18px", color: "#52606d", lineHeight: 1.7 }}>
-            Browse all the cards freely. There are no steps in this mode.
-          </p>
-
-          <h2 style={{ marginTop: "32px" }}>Emotion Cards</h2>
-          <CardGrid
-            cardsToShow={emotionCards}
-            selectedId={null}
-            onSelect={() => {}}
-            cardButtonStyle={cardButtonStyle}
-          />
-
-          <h2 style={{ marginTop: "48px" }}>Belief Cards</h2>
-          <CardGrid
-            cardsToShow={beliefCards}
-            selectedId={null}
-            onSelect={() => {}}
-            cardButtonStyle={cardButtonStyle}
-          />
-
-          <h2 style={{ marginTop: "48px" }}>Response Cards</h2>
-          <CardGrid
-            cardsToShow={responseCards}
-            selectedId={null}
-            onSelect={() => {}}
-            cardButtonStyle={cardButtonStyle}
-          />
-        </section>
-      </div>
-    </main>
-  );}
-
+         
   if (mode === "multiLobby") {
             setMode("multi");
           }
@@ -1332,7 +1285,63 @@ useEffect(() => {
       </main>
     );
   }
+if (mode === "free") {
+  return (
+    <main style={pageStyle}>
+      <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
+        <button
+          onClick={() => setMode("home")}
+          style={{ ...secondaryButtonStyle, marginBottom: "24px" }}
+        >
+          ← Back
+        </button>
 
+        <section style={panelStyle}>
+          <h1 style={{ marginTop: 0, fontSize: "42px" }}>
+            Free Exploration
+          </h1>
+
+          <p
+            style={{
+              fontSize: "18px",
+              color: "#52606d",
+              lineHeight: 1.7,
+            }}
+          >
+            Browse all cards freely. There are no steps in this mode.
+          </p>
+
+          <h2 style={{ marginTop: "32px" }}>Emotion Cards</h2>
+
+          <CardGrid
+            cardsToShow={emotionCards}
+            selectedId={null}
+            onSelect={() => {}}
+            cardButtonStyle={cardButtonStyle}
+          />
+
+          <h2 style={{ marginTop: "48px" }}>Belief Cards</h2>
+
+          <CardGrid
+            cardsToShow={beliefCards}
+            selectedId={null}
+            onSelect={() => {}}
+            cardButtonStyle={cardButtonStyle}
+          />
+
+          <h2 style={{ marginTop: "48px" }}>Response Cards</h2>
+
+          <CardGrid
+            cardsToShow={responseCards}
+            selectedId={null}
+            onSelect={() => {}}
+            cardButtonStyle={cardButtonStyle}
+          />
+        </section>
+      </div>
+    </main>
+  );
+}
   if (mode === "multiLobby") {
     return (
       <main style={pageStyle}>
