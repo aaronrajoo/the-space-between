@@ -37,6 +37,7 @@ type PlayerJourney = {
   responseReflection: string;
   responseReflectionConfirmed: boolean;
   responseSharedAloud: boolean;
+  responseReadyToShare: boolean;
   readyForLevel2: boolean;
   finalBelief: string | null;
   customFinalBelief: string;
@@ -45,6 +46,7 @@ type PlayerJourney = {
   customFinalEmotion: string;
   customFinalEmotionConfirmed: boolean;
   timelineRedeclared: boolean;
+  step7PicksConfirmed: boolean;
   finalResponse: string | null;
   finalResponseConfirmed: boolean;
   customFinalResponse: string;
@@ -86,6 +88,7 @@ function createEmptyJourney(): PlayerJourney {
     responseReflection: "",
     responseReflectionConfirmed: false,
     responseSharedAloud: false,
+    responseReadyToShare: false,
     readyForLevel2: false,
     finalBelief: null,
     customFinalBelief: "",
@@ -94,6 +97,7 @@ function createEmptyJourney(): PlayerJourney {
     customFinalEmotion: "",
     customFinalEmotionConfirmed: false,
     timelineRedeclared: false,
+    step7PicksConfirmed: false,
     finalResponse: null,
     finalResponseConfirmed: false,
     customFinalResponse: "",
@@ -1715,7 +1719,8 @@ const displayedResponseText =
                 Boolean(journey.customResponseConfirmed))) &&
             ((journey.responseReflection.trim().length > 0 &&
               Boolean(journey.responseReflectionConfirmed)) ||
-              journey.responseSharedAloud),
+              journey.responseSharedAloud) &&
+            journey.responseReadyToShare,
         ),
       );
 
@@ -1775,6 +1780,7 @@ const receiverResponseText =
             (journey.finalEmotion !== EMOTION_WILD_CARD_ID ||
               (journey.customFinalEmotion.trim().length > 0 &&
                 Boolean(journey.customFinalEmotionConfirmed))) &&
+            journey.step7PicksConfirmed &&
             journey.timelineRedeclared,
         ),
       );
@@ -1833,7 +1839,8 @@ const receiverResponseText =
                   activeJourney.customResponseConfirmed)) &&
               ((activeJourney.responseReflection.trim().length > 0 &&
                 activeJourney.responseReflectionConfirmed) ||
-                activeJourney.responseSharedAloud),
+                activeJourney.responseSharedAloud) &&
+              activeJourney.responseReadyToShare,
           );
         case 5:
           return Boolean(activeJourney.readyForLevel2);
@@ -1851,6 +1858,7 @@ const receiverResponseText =
               (activeJourney.finalEmotion !== EMOTION_WILD_CARD_ID ||
                 (activeJourney.customFinalEmotion.trim().length > 0 &&
                   activeJourney.customFinalEmotionConfirmed)) &&
+              activeJourney.step7PicksConfirmed &&
               activeJourney.timelineRedeclared,
           );
         case 8:
@@ -2806,6 +2814,7 @@ zIndex: 50,
                                 : "",
                             customResponseConfirmed: false,
                             responseReflectionConfirmed: false,
+                            responseReadyToShare: false,
                           })
                         }
                         style={cardButtonStyle(
@@ -2855,6 +2864,7 @@ zIndex: 50,
                           updateActiveJourney({
                             customResponse: draftCustomResponse || activeJourney.customResponse,
                             customResponseConfirmed: true,
+                            responseReadyToShare: false,
                           })
                         }
                         label="Confirm this response"
@@ -2904,6 +2914,7 @@ zIndex: 50,
                             responseReflection: draftResponseReflection || activeJourney.responseReflection,
                             responseReflectionConfirmed: true,
                             responseSharedAloud: false,
+                            responseReadyToShare: false,
                           })
                         }
                         label="Confirm typed reflection"
@@ -2916,6 +2927,7 @@ zIndex: 50,
                             responseSharedAloud:
                               !activeJourney.responseSharedAloud,
                             responseReflectionConfirmed: false,
+                            responseReadyToShare: false,
                           })
                         }
                         style={{
@@ -2939,12 +2951,34 @@ zIndex: 50,
                           ? "✓ Shared aloud"
                           : "I shared this aloud"}
                       </button>
+
+                      <ConfirmTextButton
+                        confirmed={Boolean(activeJourney.responseReadyToShare)}
+                        disabled={
+                          !(
+                            activeJourney.response &&
+                            (activeJourney.response !== RESPONSE_WILD_CARD_ID ||
+                              (activeJourney.customResponse.trim().length > 0 &&
+                                Boolean(activeJourney.customResponseConfirmed))) &&
+                            ((activeJourney.responseReflection.trim().length > 0 &&
+                              Boolean(activeJourney.responseReflectionConfirmed)) ||
+                              activeJourney.responseSharedAloud)
+                          )
+                        }
+                        onConfirm={() =>
+                          updateActiveJourney({
+                            responseReadyToShare: true,
+                          })
+                        }
+                        label="Confirm response — ready to share in circle"
+                        confirmedLabel="✓ Ready to share in circle"
+                      />
                     </div>
                   )}
 
                   {isHost && (
                   <StatusList
-                    title="Step 5 Status"
+                    title="Ready to share in circle"
                     players={joinedPlayers.map((player) => player.player_name)}
                     done={(index) => {
   const journey = multiplayerJourneys[index];
@@ -2966,7 +3000,8 @@ zIndex: 50,
           journey.responseReflectionConfirmed
         ) ||
         journey.responseSharedAloud
-      )
+      ) &&
+      journey.responseReadyToShare
   );
 }}
                   />
@@ -2999,7 +3034,7 @@ zIndex: 50,
                               : "not-allowed",
                           }}
                         >
-                          Complete Level 1 together
+                          Invite circle sharing when everyone is ready
                         </button>
                       </>
                     ) : (
@@ -3550,6 +3585,8 @@ zIndex: 50,
                                     ? activeJourney.customFinalBelief
                                     : "",
                                 customFinalBeliefConfirmed: false,
+                                step7PicksConfirmed: false,
+                                timelineRedeclared: false,
                               })
                             }
                             style={cardButtonStyle(
@@ -3631,6 +3668,8 @@ zIndex: 50,
                           updateActiveJourney({
                             customFinalBelief: draftCustomFinalBelief || activeJourney.customFinalBelief,
                             customFinalBeliefConfirmed: true,
+                            step7PicksConfirmed: false,
+                            timelineRedeclared: false,
                           })
                         }
                         label="Confirm this belief"
@@ -3673,6 +3712,8 @@ zIndex: 50,
                                       ? activeJourney.customFinalEmotion
                                       : "",
                                   customFinalEmotionConfirmed: false,
+                                  step7PicksConfirmed: false,
+                                  timelineRedeclared: false,
                                 })
                               }
                               style={cardButtonStyle(
@@ -3727,6 +3768,8 @@ zIndex: 50,
                                 updateActiveJourney({
                                   customFinalEmotion: draftCustomFinalEmotion || activeJourney.customFinalEmotion,
                                   customFinalEmotionConfirmed: true,
+                                  step7PicksConfirmed: false,
+                                  timelineRedeclared: false,
                                 })
                               }
                               label="Confirm this emotion"
@@ -3746,6 +3789,31 @@ zIndex: 50,
                       (activeJourney.customFinalEmotion.trim().length > 0 &&
                         Boolean(activeJourney.customFinalEmotionConfirmed))) && (
                       <>
+                        <div style={{ marginTop: "28px" }}>
+                          <ConfirmTextButton
+                            confirmed={Boolean(activeJourney.step7PicksConfirmed)}
+                            disabled={
+                              !(
+                                activeJourney.finalBelief &&
+                                (activeJourney.finalBelief !== BELIEF_WILD_CARD_ID ||
+                                  (activeJourney.customFinalBelief.trim().length > 0 &&
+                                    Boolean(activeJourney.customFinalBeliefConfirmed))) &&
+                                activeJourney.finalEmotion &&
+                                (activeJourney.finalEmotion !== EMOTION_WILD_CARD_ID ||
+                                  (activeJourney.customFinalEmotion.trim().length > 0 &&
+                                    Boolean(activeJourney.customFinalEmotionConfirmed)))
+                              )
+                            }
+                            onConfirm={() =>
+                              updateActiveJourney({
+                                step7PicksConfirmed: true,
+                              })
+                            }
+                            label="Confirm picks — ready to redeclare aloud"
+                            confirmedLabel="✓ Picks confirmed — ready to redeclare"
+                          />
+                        </div>
+
                         <div
                           style={{
                             marginTop: "32px",
@@ -3773,10 +3841,10 @@ zIndex: 50,
                         </div>
 
                         <button
+                          disabled={!activeJourney.step7PicksConfirmed}
                           onClick={() =>
                             updateActiveJourney({
-                              timelineRedeclared:
-                                !activeJourney.timelineRedeclared,
+                              timelineRedeclared: true,
                             })
                           }
                           style={{
@@ -3793,7 +3861,8 @@ zIndex: 50,
                               ? "#115e59"
                               : "#52606d",
                             fontWeight: "bold",
-                            cursor: "pointer",
+                            opacity: activeJourney.step7PicksConfirmed ? 1 : 0.45,
+                            cursor: activeJourney.step7PicksConfirmed ? "pointer" : "not-allowed",
                           }}
                         >
                           {activeJourney.timelineRedeclared
@@ -3802,6 +3871,18 @@ zIndex: 50,
                         </button>
                       </>
                     )}
+
+                  {isHost && (
+                  <StatusList
+                    title="Ready to redeclare"
+                    players={joinedPlayers.map((player) => player.player_name)}
+                    done={(index) => {
+                      const journey = multiplayerJourneys[index];
+                      if (!journey) return false;
+                      return Boolean(journey.step7PicksConfirmed);
+                    }}
+                  />
+                  )}
 
                   {isHost && (
                   <StatusList
@@ -3819,6 +3900,7 @@ zIndex: 50,
                           (journey.finalEmotion !== EMOTION_WILD_CARD_ID ||
                             (journey.customFinalEmotion.trim().length > 0 &&
                               Boolean(journey.customFinalEmotionConfirmed))) &&
+                          journey.step7PicksConfirmed &&
                           journey.timelineRedeclared,
                       );
                     }}
