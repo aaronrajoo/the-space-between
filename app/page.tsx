@@ -1710,19 +1710,18 @@ const displayedResponseText =
       multiplayerJourneys.every((journey) => journey.timelineDeclared);
 
     const allPlayersChoseResponse =
-      journeysReady &&
-      multiplayerJourneys.every((journey) =>
-        Boolean(
-          journey.response &&
-            (journey.response !== RESPONSE_WILD_CARD_ID ||
-              (journey.customResponse.trim().length > 0 &&
-                Boolean(journey.customResponseConfirmed))) &&
-            ((journey.responseReflection.trim().length > 0 &&
-              Boolean(journey.responseReflectionConfirmed)) ||
-              journey.responseSharedAloud) &&
-            journey.responseReadyToShare,
-        ),
-      );
+  journeysReady &&
+  multiplayerJourneys.every((journey) =>
+    Boolean(
+      journey.response &&
+        (journey.response !== RESPONSE_WILD_CARD_ID ||
+          (journey.customResponse.trim().length > 0 &&
+            Boolean(journey.customResponseConfirmed))) &&
+        (journey.responseReflection.trim().length === 0 ||
+          Boolean(journey.responseReflectionConfirmed)) &&
+        journey.responseReadyToShare,
+    ),
+  );
 
     const allPlayersReadyForLevel2 =
       journeysReady &&
@@ -2986,23 +2985,14 @@ zIndex: 50,
   if (!journey) return false;
 
   return Boolean(
-    journey.response &&
-      (
-        journey.response !== RESPONSE_WILD_CARD_ID ||
-        (
-          journey.customResponse.trim().length > 0 &&
-          journey.customResponseConfirmed
-        )
-      ) &&
-      (
-        (
-          journey.responseReflection.trim().length > 0 &&
-          journey.responseReflectionConfirmed
-        ) ||
-        journey.responseSharedAloud
-      ) &&
-      journey.responseReadyToShare
-  );
+  journey.response &&
+    (journey.response !== RESPONSE_WILD_CARD_ID ||
+      (journey.customResponse.trim().length > 0 &&
+        Boolean(journey.customResponseConfirmed))) &&
+    (journey.responseReflection.trim().length === 0 ||
+      Boolean(journey.responseReflectionConfirmed)) &&
+    journey.responseReadyToShare,
+);
 }}
                   />
                   )}
