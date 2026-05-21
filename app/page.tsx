@@ -1533,8 +1533,8 @@ if (mode === "free") {
           "What belief might be beneath the story you’re telling yourself about what happened?",
       },
       {
-        title: "Step 4 — Declare the Timeline",
-        prompt: "Take turns to declare your timeline aloud.",
+        title: "Step 4 — Declare the Emotion Timeline",
+        prompt: "Take turns to declare your emotion timeline aloud.",
       },
       {
         title: "Step 5 — Response",
@@ -2078,7 +2078,7 @@ const receiverResponseText =
     color: "#0f766e",
   }}
 >
-  My Timeline
+  My Emotion Timeline
 </div>{" "}
   [
   Situation:{" "}
@@ -2641,7 +2641,7 @@ const receiverResponseText =
                   }}
                 >
                   <StepHeader
-                    title="Step 4 — Declare the Timeline"
+                    title="Step 4 — Declare the Emotion Timeline"
                     label={`Multiplayer Step ${multiplayerStep + 1}`}
                   />
 
@@ -2653,7 +2653,7 @@ const receiverResponseText =
                     }}
                   >
                     <strong>{promptReader}</strong>, read this prompt aloud to
-                    the table: “Take turns to declare your timeline aloud.”
+                    the table: “Take turns to declare your emotion timeline aloud.”
                   </p>
 
                   <div
@@ -2703,7 +2703,7 @@ const receiverResponseText =
                     }}
                   >
                     {activeJourney.timelineDeclared
-                      ? "✓ Timeline declared"
+                      ? "✓ Emotion timeline declared"
                       : "I have declared this aloud"}
                   </button>
 
@@ -3156,7 +3156,7 @@ const receiverResponseText =
       color: "#0f172a",
     }}
   >
-    Receiver’s Timeline: {currentReceiver}
+    Receiver’s Emotion Timeline: {currentReceiver}
   </p>
 
   <p style={{ margin: 0 }}>
@@ -3791,7 +3791,7 @@ const receiverResponseText =
                           }}
                         >
                           {activeJourney.timelineRedeclared
-                            ? "✓ Timeline redeclared"
+                            ? "✓ Emotion timeline redeclared"
                             : "I have redeclared this aloud"}
                         </button>
                       </>
@@ -4168,7 +4168,7 @@ const receiverResponseText =
                     }}
                   >
                     <h4 style={{ marginTop: 0, fontSize: "22px" }}>
-                      Your final timeline
+                      Your final emotion timeline
                     </h4>
 
                     <p style={{ fontSize: "22px", lineHeight: 1.6 }}>
@@ -4714,11 +4714,11 @@ const receiverResponseText =
           {!showClosingScreen && !level1Complete && currentStep === 3 && (
             <>
               <h2 style={{ fontSize: "30px", marginTop: 0 }}>
-                Step 4 — Declare the Timeline
+                Step 4 — Declare the Emotion Timeline
               </h2>
 
               <p style={{ fontSize: "19px", color: "#52606d" }}>
-                Read the timeline aloud.
+                Read the emotion timeline aloud.
               </p>
 
               <div
@@ -4757,7 +4757,7 @@ const receiverResponseText =
                 }}
               >
                 {timelineDeclared
-                  ? "✓ Timeline declared"
+                  ? "✓ Emotion timeline declared"
                   : "I have declared this aloud"}
               </button>
 
@@ -5154,7 +5154,7 @@ const receiverResponseText =
                     }}
                   >
                     {timelineRedeclared
-                      ? "✓ Timeline redeclared"
+                      ? "✓ Emotion timeline redeclared"
                       : "I have redeclared this aloud"}
                   </button>
                 </>
@@ -5349,7 +5349,7 @@ const receiverResponseText =
                 }}
               >
                 <h3 style={{ marginTop: 0, fontSize: "24px" }}>
-                  Your final timeline
+                  Your final emotion timeline
                 </h3>
 
                 <p style={{ fontSize: "24px", lineHeight: 1.6 }}>
