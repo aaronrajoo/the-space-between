@@ -177,7 +177,8 @@ const [draftCustomFinalEmotion, setDraftCustomFinalEmotion] = useState("");
 const [draftCustomFinalResponse, setDraftCustomFinalResponse] = useState("");
 const [draftReflectionText, setDraftReflectionText] = useState("");
 const [draftBeliefOfferId, setDraftBeliefOfferId] = useState<string | null>(null);
-
+const [responseCircleSharingInvited, setResponseCircleSharingInvited] =
+  useState(false);
   const selectedEmotionCard = emotionCards.find(
     (card) => card.id === selectedEmotion,
   );
@@ -1722,7 +1723,9 @@ const displayedResponseText =
         journey.responseReadyToShare,
     ),
   );
-
+const allPlayersSharedResponseAloud =
+  journeysReady &&
+  multiplayerJourneys.every((journey) => journey.responseSharedAloud);
     const allPlayersReadyForLevel2 =
       journeysReady &&
       multiplayerJourneys.every((journey) => journey.readyForLevel2);
@@ -3010,22 +3013,42 @@ zIndex: 50,
                           Back
                         </button>
 
-                        <button
-                          onClick={async () => {
-                            if (allPlayersChoseResponse)
-                              await updateRoomStep(5);
-                          }}
-                          disabled={!allPlayersChoseResponse}
-                          style={{
-                            ...primaryButtonStyle,
-                            opacity: allPlayersChoseResponse ? 1 : 0.4,
-                            cursor: allPlayersChoseResponse
-                              ? "pointer"
-                              : "not-allowed",
-                          }}
-                        >
-                          Invite circle sharing when everyone is ready
-                        </button>
+                       <button
+  onClick={async () => {
+    if (!responseCircleSharingInvited) {
+      setResponseCircleSharingInvited(true);
+      return;
+    }
+
+    if (allPlayersSharedResponseAloud) {
+      setResponseCircleSharingInvited(false);
+      await updateRoomStep(5);
+    }
+  }}
+  disabled={
+    !allPlayersChoseResponse ||
+    (responseCircleSharingInvited && !allPlayersSharedResponseAloud)
+  }
+  style={{
+    ...primaryButtonStyle,
+    opacity:
+      allPlayersChoseResponse &&
+      (!responseCircleSharingInvited || allPlayersSharedResponseAloud)
+        ? 1
+        : 0.4,
+    cursor:
+      allPlayersChoseResponse &&
+      (!responseCircleSharingInvited || allPlayersSharedResponseAloud)
+        ? "pointer"
+        : "not-allowed",
+  }}
+>
+  {!responseCircleSharingInvited
+    ? "Invite circle sharing"
+    : allPlayersSharedResponseAloud
+      ? "Proceed to next level"
+      : "Waiting for everyone to share aloud"}
+</button>
                       </>
                     ) : (
                       renderReadyForHostNotice(isMyCurrentStepComplete(multiplayerStep))
