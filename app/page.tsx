@@ -570,111 +570,53 @@ const [draftBeliefOfferId, setDraftBeliefOfferId] = useState<string | null>(null
           }
 
           if (mode === "free") {
-    return (
-      <main style={pageStyle}>
-        <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
-          <section
-            style={{
-              marginTop: "40px",
-              padding: "36px",
-              borderRadius: "32px",
-              background: "rgba(255,255,255,0.70)",
-              backdropFilter: "blur(14px)",
-              boxShadow: "0 18px 40px rgba(0,0,0,0.08)",
-            }}
-          >
-            <button
-              onClick={() => setMode("home")}
-              style={secondaryButtonStyle}
-            >
-              ← Back to start
-            </button>
+  return (
+    <main style={pageStyle}>
+      <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
+        <button
+          onClick={() => setMode("home")}
+          style={{ ...secondaryButtonStyle, marginBottom: "24px" }}
+        >
+          ← Back
+        </button>
 
-            <p
-              style={{
-                marginTop: "32px",
-                marginBottom: "8px",
-                fontSize: "14px",
-                fontWeight: "bold",
-                letterSpacing: "0.16em",
-                textTransform: "uppercase",
-                color: "#0f766e",
-              }}
-            >
-              Free Exploration
-            </p>
+        <section style={panelStyle}>
+          <h1 style={{ marginTop: 0, fontSize: "42px" }}>
+            Free Exploration
+          </h1>
 
-            <h1
-              style={{
-                margin: 0,
-                fontSize: "42px",
-                lineHeight: 1.15,
-                letterSpacing: "-0.04em",
-              }}
-            >
-              Browse the cards freely
-            </h1>
+          <p style={{ fontSize: "18px", color: "#52606d", lineHeight: 1.7 }}>
+            Browse the cards freely. Pick, discuss, or reflect in any order.
+          </p>
 
-            <p
-              style={{
-                marginTop: "18px",
-                maxWidth: "760px",
-                fontSize: "18px",
-                lineHeight: 1.7,
-                color: "#52606d",
-              }}
-            >
-              Use this mode when you want open-ended exploration without the guided steps.
-              Pick, compare, and talk through any emotion, belief, or response card.
-            </p>
-          </section>
+          <h2>Emotion Cards</h2>
+          <CardGrid
+            cardsToShow={emotionCards}
+            selectedId={null}
+            onSelect={() => {}}
+            cardButtonStyle={cardButtonStyle}
+          />
 
-          {[
-            { title: "Emotion Cards", cardsToShow: emotionCards },
-            { title: "Belief Cards", cardsToShow: beliefCards },
-            { title: "Response Cards", cardsToShow: responseCards },
-          ].map((section) => (
-            <section
-              key={section.title}
-              style={{
-                ...panelStyle,
-                marginTop: "32px",
-              }}
-            >
-              <h2 style={{ fontSize: "30px", marginTop: 0 }}>{section.title}</h2>
+          <h2 style={{ marginTop: "48px" }}>Belief Cards</h2>
+          <CardGrid
+            cardsToShow={beliefCards}
+            selectedId={null}
+            onSelect={() => {}}
+            cardButtonStyle={cardButtonStyle}
+          />
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-                  gap: "20px",
-                  marginTop: "24px",
-                }}
-              >
-                {section.cardsToShow.map((card) => (
-                  <div
-                    key={card.id}
-                    style={{
-                      borderRadius: "24px",
-                      overflow: "hidden",
-                      background: "white",
-                      boxShadow: "0 10px 25px rgba(0,0,0,0.10)",
-                    }}
-                  >
-                    <img
-                      src={card.image}
-                      alt={card.title}
-                      style={{ width: "100%", display: "block" }}
-                    />
-                  </div>
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
-      </main>
-    );
-  }
+          <h2 style={{ marginTop: "48px" }}>Response Cards</h2>
+          <CardGrid
+            cardsToShow={responseCards}
+            selectedId={null}
+            onSelect={() => {}}
+            cardButtonStyle={cardButtonStyle}
+          />
+        </section>
+      </div>
+    </main>
+  );
+}
 
   if (mode === "multiLobby") {
             setMode("multi");
