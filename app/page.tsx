@@ -1015,7 +1015,7 @@ useEffect(() => {
                   cursor: "pointer",
                 }}
               >
-                <h2 style={{ margin: 0, fontSize: "26px" }}>Guided Solo Mode</h2>
+                <h2 style={{ margin: 0, fontSize: "26px" }}>Solo Mode</h2>
                 <p
                   style={{
                     marginTop: "12px",
@@ -1025,8 +1025,7 @@ useEffect(() => {
                     color: "#52606d",
                   }}
                 >
-                  A guided private reflection mode for journaling, coaching
-                  preparation, or personal emotional clarity.
+                  A guided private reflection mode for personal emotional exploration.
                 </p>
               </button>
 
@@ -1106,7 +1105,7 @@ useEffect(() => {
                   cursor: "pointer",
                 }}
               >
-                <h2 style={{ margin: 0, fontSize: "26px" }}>Guided Multiplayer Mode</h2>
+                <h2 style={{ margin: 0, fontSize: "26px" }}>Multiplayer Mode</h2>
                 <p
                   style={{
                     marginTop: "12px",
@@ -1116,8 +1115,8 @@ useEffect(() => {
                     color: "#52606d",
                   }}
                 >
-                  Create and host a guided shared reflection room and invite others
-                  to explore the game together.
+                  A guided reflection room for you and others
+                  to explore your emotions together.
                 </p>
               </button>
 
