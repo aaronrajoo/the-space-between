@@ -177,8 +177,6 @@ const [draftCustomFinalEmotion, setDraftCustomFinalEmotion] = useState("");
 const [draftCustomFinalResponse, setDraftCustomFinalResponse] = useState("");
 const [draftReflectionText, setDraftReflectionText] = useState("");
 const [draftBeliefOfferId, setDraftBeliefOfferId] = useState<string | null>(null);
-const [responseCircleSharingInvited, setResponseCircleSharingInvited] =
-  useState(false);
   const selectedEmotionCard = emotionCards.find(
     (card) => card.id === selectedEmotion,
   );
@@ -2923,71 +2921,73 @@ zIndex: 50,
                         confirmedLabel="✓ Reflection confirmed"
                       />
                       <div
-  style={{
-    position: "sticky",
-    bottom: "16px",
-    zIndex: 70,
-    marginTop: "24px",
-    padding: "14px",
-    borderRadius: "20px",
-    background: "rgba(255,253,248,0.94)",
-    backdropFilter: "blur(10px)",
-    boxShadow: "0 -8px 20px rgba(0,0,0,0.08)",
-  }}
->
-<ConfirmTextButton
-                        confirmed={Boolean(activeJourney.responseReadyToShare)}
-                        disabled={
-  !(
-    activeJourney.response &&
-    (activeJourney.response !== RESPONSE_WILD_CARD_ID ||
-      (activeJourney.customResponse.trim().length > 0 &&
-        Boolean(activeJourney.customResponseConfirmed))) &&
-    (
-      activeJourney.responseReflection.trim().length === 0 ||
-      Boolean(activeJourney.responseReflectionConfirmed)
-    )
-  )
-                        }
-                        onConfirm={() =>
-                          updateActiveJourney({
-                            responseReadyToShare: true,
-                          })
-                        }
-                        label="Confirm response — ready to share in circle"
-                        confirmedLabel="✓ Ready to share in circle"
-                      />
-                      
-                      <button
-                         disabled={!activeJourney.responseReadyToShare}
-  onClick={() =>
-                          updateActiveJourney({
-  responseSharedAloud: true,
-})
-                        }
                         style={{
-                          marginTop: "18px",
-                          padding: "12px 18px",
-                          borderRadius: "999px",
-                          border: activeJourney.responseSharedAloud
-                            ? "2px solid #0f766e"
-                            : "2px solid #d8d2c4",
-                          background: activeJourney.responseSharedAloud
-                            ? "#ccfbf1"
-                            : "#fffdf8",
-                          color: activeJourney.responseSharedAloud
-                            ? "#115e59"
-                            : "#52606d",
-                          fontWeight: "bold",
-                           cursor: activeJourney.responseReadyToShare ? "pointer" : "not-allowed",
-    opacity: activeJourney.responseReadyToShare ? 1 : 0.45,
+                          position: "sticky",
+                          bottom: "16px",
+                          zIndex: 70,
+                          marginTop: "24px",
+                          padding: "14px",
+                          borderRadius: "20px",
+                          background: "rgba(255,253,248,0.94)",
+                          backdropFilter: "blur(10px)",
+                          boxShadow: "0 -8px 20px rgba(0,0,0,0.08)",
                         }}
                       >
-                        {activeJourney.responseSharedAloud
-                          ? "✓ Shared aloud"
-                          : "I shared this aloud"}
-                      </button>
-</div>
+                        <ConfirmTextButton
+                          confirmed={Boolean(activeJourney.responseReadyToShare)}
+                          disabled={
+                            !(
+                              activeJourney.response &&
+                              (activeJourney.response !== RESPONSE_WILD_CARD_ID ||
+                                (activeJourney.customResponse.trim().length > 0 &&
+                                  Boolean(activeJourney.customResponseConfirmed))) &&
+                              (activeJourney.responseReflection.trim().length === 0 ||
+                                Boolean(activeJourney.responseReflectionConfirmed))
+                            )
+                          }
+                          onConfirm={() =>
+                            updateActiveJourney({
+                              responseReadyToShare: true,
+                            })
+                          }
+                          label="Confirm response — ready to share in circle"
+                          confirmedLabel="✓ Ready to share in circle"
+                        />
+
+                        <button
+                          disabled={!activeJourney.responseReadyToShare}
+                          onClick={() =>
+                            updateActiveJourney({
+                              responseSharedAloud: true,
+                            })
+                          }
+                          style={{
+                            marginTop: "12px",
+                            marginLeft: "12px",
+                            padding: "12px 18px",
+                            borderRadius: "999px",
+                            border: activeJourney.responseSharedAloud
+                              ? "2px solid #0f766e"
+                              : "2px solid #d8d2c4",
+                            background: activeJourney.responseSharedAloud
+                              ? "#ccfbf1"
+                              : "#fffdf8",
+                            color: activeJourney.responseSharedAloud
+                              ? "#115e59"
+                              : "#52606d",
+                            fontWeight: "bold",
+                            cursor: activeJourney.responseReadyToShare
+                              ? "pointer"
+                              : "not-allowed",
+                            opacity: activeJourney.responseReadyToShare ? 1 : 0.45,
+                          }}
+                        >
+                          {activeJourney.responseSharedAloud
+                            ? "✓ Shared aloud"
+                            : "I shared this aloud"}
+                        </button>
+                      </div>
+
                       
                     </div>
                   )}
@@ -3799,45 +3799,6 @@ zIndex: 50,
                       (activeJourney.customFinalEmotion.trim().length > 0 &&
                         Boolean(activeJourney.customFinalEmotionConfirmed))) && (
                       <>
-                        <div style={{ marginTop: "28px" }}>
-                          <div
-  style={{
-    position: "sticky",
-    bottom: "16px",
-    zIndex: 70,
-    marginTop: "24px",
-    padding: "14px",
-    borderRadius: "20px",
-    background: "rgba(255,253,248,0.94)",
-    backdropFilter: "blur(10px)",
-    boxShadow: "0 -8px 20px rgba(0,0,0,0.08)",
-  }}
->
-  <ConfirmTextButton
-    confirmed={Boolean(activeJourney.step7PicksConfirmed)}
-    disabled={
-      !(
-        activeJourney.finalBelief &&
-        (activeJourney.finalBelief !== BELIEF_WILD_CARD_ID ||
-          (activeJourney.customFinalBelief.trim().length > 0 &&
-            Boolean(activeJourney.customFinalBeliefConfirmed))) &&
-        activeJourney.finalEmotion &&
-        (activeJourney.finalEmotion !== EMOTION_WILD_CARD_ID ||
-          (activeJourney.customFinalEmotion.trim().length > 0 &&
-            Boolean(activeJourney.customFinalEmotionConfirmed)))
-      )
-    }
-    onConfirm={() =>
-      updateActiveJourney({
-        step7PicksConfirmed: true,
-      })
-    }
-    label="Confirm picks — ready to redeclare aloud"
-    confirmedLabel="✓ Picks confirmed — ready to redeclare"
-  />
-</div>
-                        </div>
-
                         <div
                           style={{
                             marginTop: "32px",
@@ -3864,35 +3825,75 @@ zIndex: 50,
                           <span>.</span>
                         </div>
 
-                        <button
-                          disabled={!activeJourney.step7PicksConfirmed}
-                          onClick={() =>
-                            updateActiveJourney({
-                              timelineRedeclared: true,
-                            })
-                          }
+                        <div
                           style={{
+                            position: "sticky",
+                            bottom: "16px",
+                            zIndex: 70,
                             marginTop: "24px",
-                            padding: "12px 18px",
-                            borderRadius: "999px",
-                            border: activeJourney.timelineRedeclared
-                              ? "2px solid #0f766e"
-                              : "2px solid #d8d2c4",
-                            background: activeJourney.timelineRedeclared
-                              ? "#ccfbf1"
-                              : "#fffdf8",
-                            color: activeJourney.timelineRedeclared
-                              ? "#115e59"
-                              : "#52606d",
-                            fontWeight: "bold",
-                            opacity: activeJourney.step7PicksConfirmed ? 1 : 0.45,
-                            cursor: activeJourney.step7PicksConfirmed ? "pointer" : "not-allowed",
+                            padding: "14px",
+                            borderRadius: "20px",
+                            background: "rgba(255,253,248,0.94)",
+                            backdropFilter: "blur(10px)",
+                            boxShadow: "0 -8px 20px rgba(0,0,0,0.08)",
                           }}
                         >
-                          {activeJourney.timelineRedeclared
-                            ? "✓ Emotion timeline redeclared"
-                            : "I have redeclared this aloud"}
-                        </button>
+                          <ConfirmTextButton
+                            confirmed={Boolean(activeJourney.step7PicksConfirmed)}
+                            disabled={
+                              !(
+                                activeJourney.finalBelief &&
+                                (activeJourney.finalBelief !== BELIEF_WILD_CARD_ID ||
+                                  (activeJourney.customFinalBelief.trim().length > 0 &&
+                                    Boolean(activeJourney.customFinalBeliefConfirmed))) &&
+                                activeJourney.finalEmotion &&
+                                (activeJourney.finalEmotion !== EMOTION_WILD_CARD_ID ||
+                                  (activeJourney.customFinalEmotion.trim().length > 0 &&
+                                    Boolean(activeJourney.customFinalEmotionConfirmed)))
+                              )
+                            }
+                            onConfirm={() =>
+                              updateActiveJourney({
+                                step7PicksConfirmed: true,
+                              })
+                            }
+                            label="Confirm picks — ready to redeclare aloud"
+                            confirmedLabel="✓ Picks confirmed — ready to redeclare"
+                          />
+
+                          <button
+                            disabled={!activeJourney.step7PicksConfirmed}
+                            onClick={() =>
+                              updateActiveJourney({
+                                timelineRedeclared: true,
+                              })
+                            }
+                            style={{
+                              marginTop: "12px",
+                              marginLeft: "12px",
+                              padding: "12px 18px",
+                              borderRadius: "999px",
+                              border: activeJourney.timelineRedeclared
+                                ? "2px solid #0f766e"
+                                : "2px solid #d8d2c4",
+                              background: activeJourney.timelineRedeclared
+                                ? "#ccfbf1"
+                                : "#fffdf8",
+                              color: activeJourney.timelineRedeclared
+                                ? "#115e59"
+                                : "#52606d",
+                              fontWeight: "bold",
+                              opacity: activeJourney.step7PicksConfirmed ? 1 : 0.45,
+                              cursor: activeJourney.step7PicksConfirmed
+                                ? "pointer"
+                                : "not-allowed",
+                            }}
+                          >
+                            {activeJourney.timelineRedeclared
+                              ? "✓ Emotion timeline redeclared"
+                              : "I have redeclared this aloud"}
+                          </button>
+                        </div>
                       </>
                     )}
 
