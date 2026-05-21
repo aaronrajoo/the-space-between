@@ -2920,15 +2920,34 @@ zIndex: 50,
                         label="Confirm typed reflection"
                         confirmedLabel="✓ Reflection confirmed"
                       />
-
-                      <button
-                        onClick={() =>
+<ConfirmTextButton
+                        confirmed={Boolean(activeJourney.responseReadyToShare)}
+                        disabled={
+  !(
+    activeJourney.response &&
+    (activeJourney.response !== RESPONSE_WILD_CARD_ID ||
+      (activeJourney.customResponse.trim().length > 0 &&
+        Boolean(activeJourney.customResponseConfirmed))) &&
+    (
+      activeJourney.responseReflection.trim().length === 0 ||
+      Boolean(activeJourney.responseReflectionConfirmed)
+    )
+  )
+                        }
+                        onConfirm={() =>
                           updateActiveJourney({
-                            responseSharedAloud:
-                              !activeJourney.responseSharedAloud,
-                            responseReflectionConfirmed: false,
-                            responseReadyToShare: false,
+                            responseReadyToShare: true,
                           })
+                        }
+                        label="Confirm response — ready to share in circle"
+                        confirmedLabel="✓ Ready to share in circle"
+                      />
+                      <button
+                         disabled={!activeJourney.responseReadyToShare}
+  onClick={() =>
+                          updateActiveJourney({
+  responseSharedAloud: true,
+})
                         }
                         style={{
                           marginTop: "18px",
@@ -2944,7 +2963,8 @@ zIndex: 50,
                             ? "#115e59"
                             : "#52606d",
                           fontWeight: "bold",
-                          cursor: "pointer",
+                           cursor: activeJourney.responseReadyToShare ? "pointer" : "not-allowed",
+    opacity: activeJourney.responseReadyToShare ? 1 : 0.45,
                         }}
                       >
                         {activeJourney.responseSharedAloud
@@ -2952,27 +2972,7 @@ zIndex: 50,
                           : "I shared this aloud"}
                       </button>
 
-                      <ConfirmTextButton
-                        confirmed={Boolean(activeJourney.responseReadyToShare)}
-                        disabled={
-                          !(
-                            activeJourney.response &&
-                            (activeJourney.response !== RESPONSE_WILD_CARD_ID ||
-                              (activeJourney.customResponse.trim().length > 0 &&
-                                Boolean(activeJourney.customResponseConfirmed))) &&
-                            ((activeJourney.responseReflection.trim().length > 0 &&
-                              Boolean(activeJourney.responseReflectionConfirmed)) ||
-                              activeJourney.responseSharedAloud)
-                          )
-                        }
-                        onConfirm={() =>
-                          updateActiveJourney({
-                            responseReadyToShare: true,
-                          })
-                        }
-                        label="Confirm response — ready to share in circle"
-                        confirmedLabel="✓ Ready to share in circle"
-                      />
+                      
                     </div>
                   )}
 
