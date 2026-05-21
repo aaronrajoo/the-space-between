@@ -3029,39 +3029,22 @@ zIndex: 50,
 
                        <button
   onClick={async () => {
-    if (!responseCircleSharingInvited) {
-      setResponseCircleSharingInvited(true);
-      return;
-    }
-
     if (allPlayersSharedResponseAloud) {
-      setResponseCircleSharingInvited(false);
       await updateRoomStep(5);
     }
   }}
-  disabled={
-    !allPlayersChoseResponse ||
-    (responseCircleSharingInvited && !allPlayersSharedResponseAloud)
-  }
+  disabled={!allPlayersSharedResponseAloud}
   style={{
     ...primaryButtonStyle,
-    opacity:
-      allPlayersChoseResponse &&
-      (!responseCircleSharingInvited || allPlayersSharedResponseAloud)
-        ? 1
-        : 0.4,
-    cursor:
-      allPlayersChoseResponse &&
-      (!responseCircleSharingInvited || allPlayersSharedResponseAloud)
-        ? "pointer"
-        : "not-allowed",
+    opacity: allPlayersChoseResponse ? 1 : 0.4,
+    cursor: allPlayersSharedResponseAloud ? "pointer" : "default",
   }}
 >
-  {!responseCircleSharingInvited
-    ? "Invite circle sharing"
-    : allPlayersSharedResponseAloud
-      ? "Proceed to next level"
-      : "Waiting for everyone to share aloud"}
+  {allPlayersSharedResponseAloud
+    ? "Proceed to next level"
+    : allPlayersChoseResponse
+      ? "Circle sharing in progress"
+      : "Waiting for everyone to be ready"}
 </button>
                       </>
                     ) : (
