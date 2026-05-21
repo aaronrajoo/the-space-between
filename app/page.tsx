@@ -111,7 +111,9 @@ function clearPlayerSession() {
   localStorage.removeItem("space-between-player-session");
 }
 export default function Home() {
-  const [mode, setMode] = useState<"home" | "single" | "free" | "multiLobby" | "multi">(
+  const [mode, setMode] = useState<
+  "home" | "single" | "free" | "multiLobby" | "multi"
+>(
     "home",
   );
 
@@ -586,10 +588,10 @@ const [draftBeliefOfferId, setDraftBeliefOfferId] = useState<string | null>(null
           </h1>
 
           <p style={{ fontSize: "18px", color: "#52606d", lineHeight: 1.7 }}>
-            Browse the cards freely. Pick, discuss, or reflect in any order.
+            Browse all the cards freely. There are no steps in this mode.
           </p>
 
-          <h2>Emotion Cards</h2>
+          <h2 style={{ marginTop: "32px" }}>Emotion Cards</h2>
           <CardGrid
             cardsToShow={emotionCards}
             selectedId={null}
@@ -615,8 +617,7 @@ const [draftBeliefOfferId, setDraftBeliefOfferId] = useState<string | null>(null
         </section>
       </div>
     </main>
-  );
-}
+  );}
 
   if (mode === "multiLobby") {
             setMode("multi");
