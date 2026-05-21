@@ -111,7 +111,7 @@ function clearPlayerSession() {
   localStorage.removeItem("space-between-player-session");
 }
 export default function Home() {
-  const [mode, setMode] = useState<"home" | "single" | "multiLobby" | "multi">(
+  const [mode, setMode] = useState<"home" | "single" | "free" | "multiLobby" | "multi">(
     "home",
   );
 
@@ -569,7 +569,114 @@ const [draftBeliefOfferId, setDraftBeliefOfferId] = useState<string | null>(null
             setMode("multi");
           }
 
-          if (mode === "multiLobby") {
+          if (mode === "free") {
+    return (
+      <main style={pageStyle}>
+        <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
+          <section
+            style={{
+              marginTop: "40px",
+              padding: "36px",
+              borderRadius: "32px",
+              background: "rgba(255,255,255,0.70)",
+              backdropFilter: "blur(14px)",
+              boxShadow: "0 18px 40px rgba(0,0,0,0.08)",
+            }}
+          >
+            <button
+              onClick={() => setMode("home")}
+              style={secondaryButtonStyle}
+            >
+              ← Back to start
+            </button>
+
+            <p
+              style={{
+                marginTop: "32px",
+                marginBottom: "8px",
+                fontSize: "14px",
+                fontWeight: "bold",
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                color: "#0f766e",
+              }}
+            >
+              Free Exploration
+            </p>
+
+            <h1
+              style={{
+                margin: 0,
+                fontSize: "42px",
+                lineHeight: 1.15,
+                letterSpacing: "-0.04em",
+              }}
+            >
+              Browse the cards freely
+            </h1>
+
+            <p
+              style={{
+                marginTop: "18px",
+                maxWidth: "760px",
+                fontSize: "18px",
+                lineHeight: 1.7,
+                color: "#52606d",
+              }}
+            >
+              Use this mode when you want open-ended exploration without the guided steps.
+              Pick, compare, and talk through any emotion, belief, or response card.
+            </p>
+          </section>
+
+          {[
+            { title: "Emotion Cards", cardsToShow: emotionCards },
+            { title: "Belief Cards", cardsToShow: beliefCards },
+            { title: "Response Cards", cardsToShow: responseCards },
+          ].map((section) => (
+            <section
+              key={section.title}
+              style={{
+                ...panelStyle,
+                marginTop: "32px",
+              }}
+            >
+              <h2 style={{ fontSize: "30px", marginTop: 0 }}>{section.title}</h2>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+                  gap: "20px",
+                  marginTop: "24px",
+                }}
+              >
+                {section.cardsToShow.map((card) => (
+                  <div
+                    key={card.id}
+                    style={{
+                      borderRadius: "24px",
+                      overflow: "hidden",
+                      background: "white",
+                      boxShadow: "0 10px 25px rgba(0,0,0,0.10)",
+                    }}
+                  >
+                    <img
+                      src={card.image}
+                      alt={card.title}
+                      style={{ width: "100%", display: "block" }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      </main>
+    );
+  }
+
+  if (mode === "multiLobby") {
             setMode("multi");
           }
         },
@@ -966,7 +1073,7 @@ useEffect(() => {
                   cursor: "pointer",
                 }}
               >
-                <h2 style={{ margin: 0, fontSize: "26px" }}>Single Player</h2>
+                <h2 style={{ margin: 0, fontSize: "26px" }}>Guided Solo Mode</h2>
                 <p
                   style={{
                     marginTop: "12px",
@@ -976,7 +1083,7 @@ useEffect(() => {
                     color: "#52606d",
                   }}
                 >
-                  A private reflection mode for journaling, coaching
+                  A guided private reflection mode for journaling, coaching
                   preparation, or personal emotional clarity.
                 </p>
               </button>
@@ -1057,7 +1164,7 @@ useEffect(() => {
                   cursor: "pointer",
                 }}
               >
-                <h2 style={{ margin: 0, fontSize: "26px" }}>Multiplayer</h2>
+                <h2 style={{ margin: 0, fontSize: "26px" }}>Guided Multiplayer Mode</h2>
                 <p
                   style={{
                     marginTop: "12px",
@@ -1067,8 +1174,47 @@ useEffect(() => {
                     color: "#52606d",
                   }}
                 >
-                  Create and host a new shared reflection room and invite others
+                  Create and host a guided shared reflection room and invite others
                   to explore the game together.
+                </p>
+              </button>
+
+              <button
+                onClick={() => {
+                  resetGame();
+                  setMode("free");
+                }}
+                onMouseEnter={() => setHoveredMode("free")}
+                onMouseLeave={() => setHoveredMode(null)}
+                style={{
+                  padding: "28px",
+                  borderRadius: "28px",
+                  border:
+                    hoveredMode === "free"
+                      ? "2px solid #0f766e"
+                      : "2px solid #d8d2c4",
+                  background: hoveredMode === "free" ? "#ccfbf1" : "#fffdf8",
+                  boxShadow:
+                    hoveredMode === "free"
+                      ? "0 18px 40px rgba(15,118,110,0.22)"
+                      : "0 14px 30px rgba(15,118,110,0.10)",
+                  transition: "all 180ms ease",
+                  textAlign: "left",
+                  cursor: "pointer",
+                }}
+              >
+                <h2 style={{ margin: 0, fontSize: "26px" }}>Free Exploration</h2>
+                <p
+                  style={{
+                    marginTop: "12px",
+                    marginBottom: 0,
+                    fontSize: "16px",
+                    lineHeight: 1.6,
+                    color: "#52606d",
+                  }}
+                >
+                  Browse all emotion, belief, and response cards freely without
+                  a step-by-step guided flow.
                 </p>
               </button>
             </div>
@@ -1083,7 +1229,7 @@ useEffect(() => {
               }}
             >
               <h3 style={{ marginTop: 0, fontSize: "22px" }}>
-                Join an existing Multiplayer Room
+                Join an existing Guided Multiplayer Room
               </h3>
 
               <p style={{ color: "#52606d", lineHeight: 1.6 }}>
@@ -1704,6 +1850,103 @@ const receiverResponseText =
         ),
       );
 
+    function isMyCurrentStepComplete(step: number) {
+      switch (step) {
+        case 0:
+          return Boolean(
+            activeJourney.emotion &&
+              (activeJourney.emotion !== EMOTION_WILD_CARD_ID ||
+                (activeJourney.customEmotion.trim().length > 0 &&
+                  activeJourney.customEmotionConfirmed)),
+          );
+        case 1:
+          return Boolean(
+            activeJourney.situationText.trim().length > 0 &&
+              activeJourney.situationTextConfirmed &&
+              activeJourney.situationSharedAloud,
+          );
+        case 2:
+          return Boolean(
+            activeJourney.belief &&
+              (activeJourney.belief !== BELIEF_WILD_CARD_ID ||
+                (activeJourney.customBelief.trim().length > 0 &&
+                  activeJourney.customBeliefConfirmed)),
+          );
+        case 3:
+          return Boolean(activeJourney.timelineDeclared);
+        case 4:
+          return Boolean(
+            activeJourney.response &&
+              (activeJourney.response !== RESPONSE_WILD_CARD_ID ||
+                (activeJourney.customResponse.trim().length > 0 &&
+                  activeJourney.customResponseConfirmed)) &&
+              ((activeJourney.responseReflection.trim().length > 0 &&
+                activeJourney.responseReflectionConfirmed) ||
+                activeJourney.responseSharedAloud),
+          );
+        case 5:
+          return Boolean(activeJourney.readyForLevel2);
+        case 6:
+          return isActivePlayerReceiver
+            ? currentReceiverIsComplete
+            : Boolean(activePlayerOffer);
+        case 7:
+          return Boolean(
+            activeJourney.finalBelief &&
+              (activeJourney.finalBelief !== BELIEF_WILD_CARD_ID ||
+                (activeJourney.customFinalBelief.trim().length > 0 &&
+                  activeJourney.customFinalBeliefConfirmed)) &&
+              activeJourney.finalEmotion &&
+              (activeJourney.finalEmotion !== EMOTION_WILD_CARD_ID ||
+                (activeJourney.customFinalEmotion.trim().length > 0 &&
+                  activeJourney.customFinalEmotionConfirmed)) &&
+              activeJourney.timelineRedeclared,
+          );
+        case 8:
+          return Boolean(
+            activeJourney.finalResponseConfirmed &&
+              activeJourney.finalResponse &&
+              (activeJourney.finalResponse !== RESPONSE_WILD_CARD_ID ||
+                (activeJourney.customFinalResponse.trim().length > 0 &&
+                  activeJourney.customFinalResponseConfirmed)),
+          );
+        case 9:
+          return Boolean(
+            (activeJourney.reflectionText.trim().length > 0 &&
+              activeJourney.reflectionTextConfirmed) ||
+              activeJourney.reflectionSharedAloud,
+          );
+        default:
+          return false;
+      }
+    }
+
+    function renderReadyForHostNotice(isReady: boolean) {
+      if (isHost) return null;
+
+      if (isReady) {
+        return (
+          <button
+            disabled
+            style={{
+              ...primaryButtonStyle,
+              marginTop: "8px",
+              opacity: 0.82,
+              cursor: "default",
+            }}
+          >
+            Ready for host to move the game forward
+          </button>
+        );
+      }
+
+      return (
+        <p style={{ color: "#52606d", fontSize: "16px" }}>
+          Complete your part, then wait for the host to continue.
+        </p>
+      );
+    }
+
     function renderPromptIntroScreen() {
       if (!currentPrompt) return null;
 
@@ -2005,6 +2248,7 @@ const receiverResponseText =
                     </div>
                   )}
 
+                  {isHost && (
                   <StatusList
                     title="Step 1 Status"
                     players={joinedPlayers.map((player) => player.player_name)}
@@ -2021,6 +2265,7 @@ const receiverResponseText =
                       );
                     }}
                   />
+                  )}
 
                   <div style={{ marginTop: "24px" }}>
                     {isHost && (
@@ -2040,11 +2285,7 @@ const receiverResponseText =
                         Continue when everyone is ready
                       </button>
                     )}
-                    {!isHost && (
-                      <p style={{ color: "#52606d", fontSize: "16px" }}>
-                        Waiting for the host to continue.
-                      </p>
-                    )}
+                    {!isHost && renderReadyForHostNotice(isMyCurrentStepComplete(multiplayerStep))}
                   </div>
                 </div>
               )}
@@ -2156,6 +2397,7 @@ const receiverResponseText =
                     </button>
                   </div>
 
+                  {isHost && (
                   <div
   style={{
     marginTop: "28px",
@@ -2238,6 +2480,7 @@ const receiverResponseText =
     );
   })}
 </div>
+                  )}
 
                   <div style={{ marginTop: "24px" }}>
                     {isHost ? (
@@ -2270,9 +2513,7 @@ const receiverResponseText =
                         </button>
                       </>
                     ) : (
-                      <p style={{ color: "#52606d", fontSize: "16px" }}>
-                        Waiting for the host to continue.
-                      </p>
+                      renderReadyForHostNotice(isMyCurrentStepComplete(multiplayerStep))
                     )}
                   </div>
                 </div>
@@ -2383,6 +2624,7 @@ const receiverResponseText =
                     </div>
                   )}
 
+                  {isHost && (
                   <StatusList
                     title="Step 3 Status"
                     players={joinedPlayers.map((player) => player.player_name)}
@@ -2397,6 +2639,7 @@ const receiverResponseText =
                       );
                     }}
                   />
+                  )}
 
                   <div style={{ marginTop: "24px" }}>
                     {isHost ? (
@@ -2428,9 +2671,7 @@ const receiverResponseText =
                         </button>
                       </>
                     ) : (
-                      <p style={{ color: "#52606d", fontSize: "16px" }}>
-                        Waiting for the host to continue.
-                      </p>
+                      renderReadyForHostNotice(isMyCurrentStepComplete(multiplayerStep))
                     )}
                   </div>
                 </div>
@@ -2515,6 +2756,7 @@ const receiverResponseText =
                       : "I have declared this aloud"}
                   </button>
 
+                  {isHost && (
                   <StatusList
                     title="Step 4 Status"
                     players={joinedPlayers.map((player) => player.player_name)}
@@ -2522,6 +2764,7 @@ const receiverResponseText =
                       Boolean(multiplayerJourneys[index]?.timelineDeclared)
                     }
                   />
+                  )}
 
                   <div style={{ marginTop: "24px" }}>
                     {isHost ? (
@@ -2554,9 +2797,7 @@ const receiverResponseText =
                         </button>
                       </>
                     ) : (
-                      <p style={{ color: "#52606d", fontSize: "16px" }}>
-                        Waiting for the host to continue.
-                      </p>
+                      renderReadyForHostNotice(isMyCurrentStepComplete(multiplayerStep))
                     )}
                   </div>
                 </div>
@@ -2747,6 +2988,7 @@ const receiverResponseText =
                     </div>
                   )}
 
+                  {isHost && (
                   <StatusList
                     title="Step 5 Status"
                     players={joinedPlayers.map((player) => player.player_name)}
@@ -2774,6 +3016,7 @@ const receiverResponseText =
   );
 }}
                   />
+                  )}
 
                   <div style={{ marginTop: "24px" }}>
                     {isHost ? (
@@ -2806,9 +3049,7 @@ const receiverResponseText =
                         </button>
                       </>
                     ) : (
-                      <p style={{ color: "#52606d", fontSize: "16px" }}>
-                        Waiting for the host to continue.
-                      </p>
+                      renderReadyForHostNotice(isMyCurrentStepComplete(multiplayerStep))
                     )}
                   </div>
                 </div>
@@ -2878,6 +3119,7 @@ const receiverResponseText =
                       : "I am ready for Level 2"}
                   </button>
 
+                  {isHost && (
                   <StatusList
                     title="Ready for Level 2"
                     players={joinedPlayers.map((player) => player.player_name)}
@@ -2885,6 +3127,7 @@ const receiverResponseText =
                       Boolean(multiplayerJourneys[index]?.readyForLevel2)
                     }
                   />
+                  )}
 
                   <div style={{ marginTop: "24px" }}>
                     {isHost ? (
@@ -2919,9 +3162,7 @@ const receiverResponseText =
                         </button>
                       </>
                     ) : (
-                      <p style={{ color: "#52606d", fontSize: "16px" }}>
-                        Waiting for the host to continue.
-                      </p>
+                      renderReadyForHostNotice(isMyCurrentStepComplete(multiplayerStep))
                     )}
                   </div>
                 </div>
@@ -3140,6 +3381,7 @@ const receiverResponseText =
                     </>
                   )}
 
+                  {isHost && (
                   <div
                     style={{
                       marginTop: "28px",
@@ -3181,7 +3423,9 @@ const receiverResponseText =
                     })}
                   </div>
 
-                  {currentReceiverIsComplete && (
+                  )}
+
+                  {isHost && currentReceiverIsComplete && (
                     <div
                       style={{
                         marginTop: "28px",
@@ -3195,6 +3439,7 @@ const receiverResponseText =
                       alternative beliefs.
                     </div>
                   )}
+
 
                   <div style={{ marginTop: "28px" }}>
                     {isHost ? (
@@ -3251,9 +3496,7 @@ const receiverResponseText =
                         )}
                       </>
                     ) : (
-                      <p style={{ color: "#52606d", fontSize: "16px" }}>
-                        Waiting for the host to continue.
-                      </p>
+                      renderReadyForHostNotice(isMyCurrentStepComplete(multiplayerStep))
                     )}
                   </div>
                 </div>
@@ -3603,6 +3846,7 @@ const receiverResponseText =
                       </>
                     )}
 
+                  {isHost && (
                   <StatusList
                     title="Step 7 Status"
                     players={joinedPlayers.map((player) => player.player_name)}
@@ -3622,6 +3866,7 @@ const receiverResponseText =
                       );
                     }}
                   />
+                  )}
 
                   <div style={{ marginTop: "28px" }}>
                     {isHost ? (
@@ -3673,9 +3918,7 @@ const receiverResponseText =
                         </button>
                       </>
                     ) : (
-                      <p style={{ color: "#52606d", fontSize: "16px" }}>
-                        Waiting for the host to continue.
-                      </p>
+                      renderReadyForHostNotice(isMyCurrentStepComplete(multiplayerStep))
                     )}
                   </div>
                 </div>
@@ -3855,6 +4098,7 @@ const receiverResponseText =
                       </div>
                     )}
 
+                  {isHost && (
                   <StatusList
                     title="Step 8 Status"
                     players={joinedPlayers.map((player) => player.player_name)}
@@ -3870,6 +4114,7 @@ const receiverResponseText =
                       );
                     }}
                   />
+                  )}
 
                   <div style={{ marginTop: "28px" }}>
                     {isHost ? (
@@ -3902,9 +4147,7 @@ const receiverResponseText =
                         </button>
                       </>
                     ) : (
-                      <p style={{ color: "#52606d", fontSize: "16px" }}>
-                        Waiting for the host to continue.
-                      </p>
+                      renderReadyForHostNotice(isMyCurrentStepComplete(multiplayerStep))
                     )}
                   </div>
                 </div>
@@ -4074,6 +4317,7 @@ const receiverResponseText =
                     </button>
                   </div>
 
+                  {isHost && (
                   <StatusList
                     title="Step 9 Status"
                     players={joinedPlayers.map((player) => player.player_name)}
@@ -4087,6 +4331,7 @@ const receiverResponseText =
                       );
                     }}
                   />
+                  )}
 
                   <div style={{ marginTop: "28px" }}>
                     {isHost ? (
