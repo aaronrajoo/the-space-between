@@ -3140,6 +3140,9 @@ zIndex: 50,
                   />
 <div
   style={{
+      position: "sticky",
+    top: "16px",
+    zIndex: 60,
     marginTop: "18px",
     marginBottom: "24px",
     padding: "18px",
