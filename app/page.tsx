@@ -2922,6 +2922,19 @@ zIndex: 50,
                         label="Confirm typed reflection"
                         confirmedLabel="✓ Reflection confirmed"
                       />
+                      <div
+  style={{
+    position: "sticky",
+    bottom: "16px",
+    zIndex: 70,
+    marginTop: "24px",
+    padding: "14px",
+    borderRadius: "20px",
+    background: "rgba(255,253,248,0.94)",
+    backdropFilter: "blur(10px)",
+    boxShadow: "0 -8px 20px rgba(0,0,0,0.08)",
+  }}
+>
 <ConfirmTextButton
                         confirmed={Boolean(activeJourney.responseReadyToShare)}
                         disabled={
@@ -2944,6 +2957,7 @@ zIndex: 50,
                         label="Confirm response — ready to share in circle"
                         confirmedLabel="✓ Ready to share in circle"
                       />
+                      
                       <button
                          disabled={!activeJourney.responseReadyToShare}
   onClick={() =>
@@ -2973,7 +2987,7 @@ zIndex: 50,
                           ? "✓ Shared aloud"
                           : "I shared this aloud"}
                       </button>
-
+</div>
                       
                     </div>
                   )}
@@ -3803,28 +3817,42 @@ zIndex: 50,
                         Boolean(activeJourney.customFinalEmotionConfirmed))) && (
                       <>
                         <div style={{ marginTop: "28px" }}>
-                          <ConfirmTextButton
-                            confirmed={Boolean(activeJourney.step7PicksConfirmed)}
-                            disabled={
-                              !(
-                                activeJourney.finalBelief &&
-                                (activeJourney.finalBelief !== BELIEF_WILD_CARD_ID ||
-                                  (activeJourney.customFinalBelief.trim().length > 0 &&
-                                    Boolean(activeJourney.customFinalBeliefConfirmed))) &&
-                                activeJourney.finalEmotion &&
-                                (activeJourney.finalEmotion !== EMOTION_WILD_CARD_ID ||
-                                  (activeJourney.customFinalEmotion.trim().length > 0 &&
-                                    Boolean(activeJourney.customFinalEmotionConfirmed)))
-                              )
-                            }
-                            onConfirm={() =>
-                              updateActiveJourney({
-                                step7PicksConfirmed: true,
-                              })
-                            }
-                            label="Confirm picks — ready to redeclare aloud"
-                            confirmedLabel="✓ Picks confirmed — ready to redeclare"
-                          />
+                          <div
+  style={{
+    position: "sticky",
+    bottom: "16px",
+    zIndex: 70,
+    marginTop: "24px",
+    padding: "14px",
+    borderRadius: "20px",
+    background: "rgba(255,253,248,0.94)",
+    backdropFilter: "blur(10px)",
+    boxShadow: "0 -8px 20px rgba(0,0,0,0.08)",
+  }}
+>
+  <ConfirmTextButton
+    confirmed={Boolean(activeJourney.step7PicksConfirmed)}
+    disabled={
+      !(
+        activeJourney.finalBelief &&
+        (activeJourney.finalBelief !== BELIEF_WILD_CARD_ID ||
+          (activeJourney.customFinalBelief.trim().length > 0 &&
+            Boolean(activeJourney.customFinalBeliefConfirmed))) &&
+        activeJourney.finalEmotion &&
+        (activeJourney.finalEmotion !== EMOTION_WILD_CARD_ID ||
+          (activeJourney.customFinalEmotion.trim().length > 0 &&
+            Boolean(activeJourney.customFinalEmotionConfirmed)))
+      )
+    }
+    onConfirm={() =>
+      updateActiveJourney({
+        step7PicksConfirmed: true,
+      })
+    }
+    label="Confirm picks — ready to redeclare aloud"
+    confirmedLabel="✓ Picks confirmed — ready to redeclare"
+  />
+</div>
                         </div>
 
                         <div
