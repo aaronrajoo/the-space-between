@@ -2054,6 +2054,9 @@ const receiverResponseText =
 
 <div
   style={{
+    position: "sticky",
+top: "16px",
+zIndex: 50,
     marginTop: "14px",
   marginBottom: "22px",
   padding: "18px 20px",
