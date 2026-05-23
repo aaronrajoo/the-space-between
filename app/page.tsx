@@ -5457,7 +5457,8 @@ export default function Home() {
               <p
                 style={{ fontSize: "19px", color: "#52606d", lineHeight: 1.7 }}
               >
-                This round, pick an alternative belief that could also be true.
+                This round, choose alternative beliefs that could also be true.
+                Simply offer a possible belief; no need to explain or convince.
               </p>
 
               <CardGrid
