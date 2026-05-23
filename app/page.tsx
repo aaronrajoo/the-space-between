@@ -1551,7 +1551,7 @@ if (mode === "free") {
       {
         title: "Step 6 — Alternative Beliefs",
         prompt:
-          "This round, each player will receive alternative beliefs from the group. Simply offer a possible belief — no need to explain or convince.",
+          "This round, each player will receive alternative beliefs from the group. Simply offer a possible belief; no need to explain or convince.",
       },
       {
         title: "Step 7 — Meaning-Making",
@@ -2130,8 +2130,7 @@ zIndex: 50,
                     }}
                   >
                     <strong>{promptReader}</strong>, read this prompt aloud to
-                    the table: “What emotion feels most true right now or
-                    recently?”
+                    the table: “Think of a recent situation that affected you emotionally. It may be something everyone here experienced, or something personal to you. What emotion did you feel most strongly in that moment?”
                   </p>
 
                   <div
@@ -2506,8 +2505,7 @@ zIndex: 50,
                     }}
                   >
                     <strong>{promptReader}</strong>, read this prompt aloud to
-                    the table: “What belief might be beneath the story you’re
-                    telling yourself about what happened?”
+                    the table: “What belief might be shaping how you understand what happened?”
                   </p>
 
                   <div
@@ -4013,8 +4011,7 @@ zIndex: 50,
                     }}
                   >
                     <strong>{promptReader}</strong>, read this prompt to the
-                    table: “After considering other beliefs, decide if you want
-                    to keep your response or choose a new one.”
+                    table: “Review your original response. You may keep your original response or choose a different one.”
                   </p>
 
                   <div
