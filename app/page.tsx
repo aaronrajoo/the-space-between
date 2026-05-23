@@ -178,6 +178,7 @@ export default function Home() {
     useState(false);
   const [singleReflectionTextConfirmed, setSingleReflectionTextConfirmed] =
     useState(false);
+  const [freeExploreCard, setFreeExploreCard] = useState<(typeof cards)[number] | null>(null);
 
   // Multiplayer state
   const [multiplayerJourneys, setMultiplayerJourneys] = useState<
@@ -1381,7 +1382,10 @@ export default function Home() {
             <CardGrid
               cardsToShow={emotionCards}
               selectedId={null}
-              onSelect={() => {}}
+              onSelect={(id) => {
+  const selectedCard = cards.find((card) => card.id === id);
+  if (selectedCard) setFreeExploreCard(selectedCard);
+}}
               cardButtonStyle={cardButtonStyle}
             />
 
@@ -1390,7 +1394,10 @@ export default function Home() {
             <CardGrid
               cardsToShow={beliefCards}
               selectedId={null}
-              onSelect={() => {}}
+              onSelect={(id) => {
+  const selectedCard = cards.find((card) => card.id === id);
+  if (selectedCard) setFreeExploreCard(selectedCard);
+}}
               cardButtonStyle={cardButtonStyle}
             />
 
@@ -1399,11 +1406,62 @@ export default function Home() {
             <CardGrid
               cardsToShow={responseCards}
               selectedId={null}
-              onSelect={() => {}}
+              onSelect={(id) => {
+  const selectedCard = cards.find((card) => card.id === id);
+  if (selectedCard) setFreeExploreCard(selectedCard);
+}}
               cardButtonStyle={cardButtonStyle}
             />
           </section>
         </div>
+        {freeExploreCard && (
+  <div
+    onClick={() => setFreeExploreCard(null)}
+    style={{
+      position: "fixed",
+      inset: 0,
+      zIndex: 9999,
+      background: "rgba(15,23,42,0.62)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "24px",
+    }}
+  >
+    <div
+      onClick={(e) => e.stopPropagation()}
+      style={{
+        maxWidth: "420px",
+        width: "100%",
+        borderRadius: "28px",
+        background: "#fffdf8",
+        padding: "18px",
+        boxShadow: "0 24px 70px rgba(0,0,0,0.35)",
+      }}
+    >
+      <img
+        src={freeExploreCard.image}
+        alt={freeExploreCard.title}
+        style={{
+          width: "100%",
+          display: "block",
+          borderRadius: "22px",
+        }}
+      />
+
+      <button
+        onClick={() => setFreeExploreCard(null)}
+        style={{
+          ...secondaryButtonStyle,
+          marginTop: "18px",
+          width: "100%",
+        }}
+      >
+        Close
+      </button>
+    </div>
+  </div>
+)}
       </main>
     );
   }
