@@ -922,7 +922,7 @@ useEffect(() => {
                 color: "#52606d",
               }}
             >
-              Choose an emotion, name what happened, notice the belief or story
+              Think of a situation, coose an emotion, describe what happened, notice the belief or story
               you are carrying, and choose a response with awareness.
             </p>
 
@@ -935,9 +935,9 @@ useEffect(() => {
                 color: "#52606d",
               }}
             >
-              This game is not about fixing feelings. It is about slowing down
+              This game is not about fixing feelings. It is about SLOWING DOWN
               enough to notice what is happening inside us, and what becomes
-              possible when we see the space between stimulus and response.
+              possible when we expand the space between stimulus and response.
             </p>
 
             <div
@@ -1523,7 +1523,7 @@ if (mode === "free") {
     const promptDefinitions = [
       {
         title: "Step 1 — Emotion",
-        prompt: "What emotion feels most true right now or recently?",
+        prompt: "Think of a recent situation that affected you emotionally. It may be something everyone here experienced, or something personal to you. What emotion did you feel most strongly in that moment?",
       },
       {
         title: "Step 2 — Situation",
@@ -1533,7 +1533,7 @@ if (mode === "free") {
       {
         title: "Step 3 — Belief",
         prompt:
-          "What belief might be beneath the story you’re telling yourself about what happened?",
+          "What belief might be shaping how you understand what happened?",
       },
       {
         title: "Step 4 — Declare the Emotion Timeline",
@@ -1551,16 +1551,16 @@ if (mode === "free") {
       {
         title: "Step 6 — Alternative Beliefs",
         prompt:
-          "This round, one player receives alternative beliefs. Everyone else silently offers one possible lens.",
+          "This round, each player will receive alternative beliefs from the group. Simply offer a possible belief — no need to explain or convince.",
       },
       {
         title: "Step 7 — Meaning-Making",
         prompt:
-          "Review the alternative beliefs offered to you. Keep what feels useful, and leave what does not.",
+          "Read the beliefs; your own and the ones offered to you. Choose the belief that feels most useful to you. Then notice whether your emotion stays the same or changes, and pick the emotion that feels most true now.",
       },
       {
         title: "Step 8 — Final Response",
-        prompt: "Choose the response you now want to carry forward.",
+        prompt: "Review your original response. You may keep your original response or choose a different one.",
       },
       {
         title: "Step 9 — Reflection",
