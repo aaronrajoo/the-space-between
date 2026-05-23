@@ -116,10 +116,8 @@ function clearPlayerSession() {
 }
 export default function Home() {
   const [mode, setMode] = useState<
-  "home" | "single" | "free" | "multiLobby" | "multi"
->(
-    "home",
-  );
+    "home" | "single" | "free" | "multiLobby" | "multi"
+  >("home");
 
   const [currentStep, setCurrentStep] = useState(0);
   const [hoveredMode, setHoveredMode] = useState<string | null>(null);
@@ -147,6 +145,39 @@ export default function Home() {
   const [reflectionText, setReflectionText] = useState("");
   const [reflectionSharedAloud, setReflectionSharedAloud] = useState(false);
   const [showClosingScreen, setShowClosingScreen] = useState(false);
+  const [singleCustomEmotionConfirmed, setSingleCustomEmotionConfirmed] =
+    useState(false);
+  const [singleSituationTextConfirmed, setSingleSituationTextConfirmed] =
+    useState(false);
+  const [singleCustomBeliefConfirmed, setSingleCustomBeliefConfirmed] =
+    useState(false);
+  const [singleCustomResponseConfirmed, setSingleCustomResponseConfirmed] =
+    useState(false);
+  const [
+    singleResponseReflectionConfirmed,
+    setSingleResponseReflectionConfirmed,
+  ] = useState(false);
+  const [singleResponseReadyToShare, setSingleResponseReadyToShare] =
+    useState(false);
+  const [customFinalBelief, setCustomFinalBelief] = useState("");
+  const [
+    singleCustomFinalBeliefConfirmed,
+    setSingleCustomFinalBeliefConfirmed,
+  ] = useState(false);
+  const [
+    singleCustomFinalEmotionConfirmed,
+    setSingleCustomFinalEmotionConfirmed,
+  ] = useState(false);
+  const [singleStep7PicksConfirmed, setSingleStep7PicksConfirmed] =
+    useState(false);
+  const [
+    singleCustomFinalResponseConfirmed,
+    setSingleCustomFinalResponseConfirmed,
+  ] = useState(false);
+  const [singleFinalResponseConfirmed, setSingleFinalResponseConfirmed] =
+    useState(false);
+  const [singleReflectionTextConfirmed, setSingleReflectionTextConfirmed] =
+    useState(false);
 
   // Multiplayer state
   const [multiplayerJourneys, setMultiplayerJourneys] = useState<
@@ -168,15 +199,17 @@ export default function Home() {
   const beliefCards = cards.filter((card) => card.type === "belief");
   const responseCards = cards.filter((card) => card.type === "response");
   const [draftSituationText, setDraftSituationText] = useState("");
-const [draftCustomEmotion, setDraftCustomEmotion] = useState("");
-const [draftCustomBelief, setDraftCustomBelief] = useState("");
-const [draftCustomResponse, setDraftCustomResponse] = useState("");
-const [draftResponseReflection, setDraftResponseReflection] = useState("");
-const [draftCustomFinalBelief, setDraftCustomFinalBelief] = useState("");
-const [draftCustomFinalEmotion, setDraftCustomFinalEmotion] = useState("");
-const [draftCustomFinalResponse, setDraftCustomFinalResponse] = useState("");
-const [draftReflectionText, setDraftReflectionText] = useState("");
-const [draftBeliefOfferId, setDraftBeliefOfferId] = useState<string | null>(null);
+  const [draftCustomEmotion, setDraftCustomEmotion] = useState("");
+  const [draftCustomBelief, setDraftCustomBelief] = useState("");
+  const [draftCustomResponse, setDraftCustomResponse] = useState("");
+  const [draftResponseReflection, setDraftResponseReflection] = useState("");
+  const [draftCustomFinalBelief, setDraftCustomFinalBelief] = useState("");
+  const [draftCustomFinalEmotion, setDraftCustomFinalEmotion] = useState("");
+  const [draftCustomFinalResponse, setDraftCustomFinalResponse] = useState("");
+  const [draftReflectionText, setDraftReflectionText] = useState("");
+  const [draftBeliefOfferId, setDraftBeliefOfferId] = useState<string | null>(
+    null,
+  );
   const selectedEmotionCard = emotionCards.find(
     (card) => card.id === selectedEmotion,
   );
@@ -212,41 +245,50 @@ const [draftBeliefOfferId, setDraftBeliefOfferId] = useState<string | null>(null
 
   const finalBeliefText =
     finalBelief === BELIEF_WILD_CARD_ID
-      ? customBelief
+      ? customFinalBelief || customBelief
       : beliefCards.find((card) => card.id === finalBelief)?.title;
 
   const situationIsComplete =
-    situationText.trim().length > 0 || situationSharedAloud;
+    situationText.trim().length > 0 &&
+    singleSituationTextConfirmed &&
+    situationSharedAloud;
 
   const beliefIsComplete =
     Boolean(selectedBelief) &&
-    (selectedBelief !== BELIEF_WILD_CARD_ID || customBelief.trim().length > 0);
+    (selectedBelief !== BELIEF_WILD_CARD_ID ||
+      (customBelief.trim().length > 0 && singleCustomBeliefConfirmed));
 
   const timelineIsComplete = timelineDeclared;
 
   const emotionIsComplete =
     Boolean(selectedEmotion) &&
     (selectedEmotion !== EMOTION_WILD_CARD_ID ||
-      customEmotion.trim().length > 0);
+      (customEmotion.trim().length > 0 && singleCustomEmotionConfirmed));
 
   const finalEmotionIsComplete =
     Boolean(finalEmotion) &&
     (finalEmotion !== EMOTION_WILD_CARD_ID ||
-      customFinalEmotion.trim().length > 0);
+      (customFinalEmotion.trim().length > 0 &&
+        singleCustomFinalEmotionConfirmed));
 
   const responseCardIsComplete =
     Boolean(selectedResponse) &&
     (selectedResponse !== RESPONSE_WILD_CARD_ID ||
-      customResponse.trim().length > 0);
+      (customResponse.trim().length > 0 && singleCustomResponseConfirmed));
 
   const finalResponseIsComplete =
     Boolean(finalResponse) &&
+    singleFinalResponseConfirmed &&
     (finalResponse !== RESPONSE_WILD_CARD_ID ||
-      customFinalResponse.trim().length > 0);
+      (customFinalResponse.trim().length > 0 &&
+        singleCustomFinalResponseConfirmed));
 
   const responseIsComplete =
     responseCardIsComplete &&
-    (responseReflection.trim().length > 0 || responseSharedAloud);
+    (responseReflection.trim().length === 0 ||
+      singleResponseReflectionConfirmed) &&
+    singleResponseReadyToShare &&
+    responseSharedAloud;
 
   function resetGame() {
     setCurrentStep(0);
@@ -272,6 +314,19 @@ const [draftBeliefOfferId, setDraftBeliefOfferId] = useState<string | null>(null
     setReflectionText("");
     setReflectionSharedAloud(false);
     setShowClosingScreen(false);
+    setSingleCustomEmotionConfirmed(false);
+    setSingleSituationTextConfirmed(false);
+    setSingleCustomBeliefConfirmed(false);
+    setSingleCustomResponseConfirmed(false);
+    setSingleResponseReflectionConfirmed(false);
+    setSingleResponseReadyToShare(false);
+    setCustomFinalBelief("");
+    setSingleCustomFinalBeliefConfirmed(false);
+    setSingleCustomFinalEmotionConfirmed(false);
+    setSingleStep7PicksConfirmed(false);
+    setSingleCustomFinalResponseConfirmed(false);
+    setSingleFinalResponseConfirmed(false);
+    setSingleReflectionTextConfirmed(false);
     setMultiplayerJourneys([]);
     setCurrentReceiverIndex(0);
     setBeliefOffers([]);
@@ -332,17 +387,17 @@ const [draftBeliefOfferId, setDraftBeliefOfferId] = useState<string | null>(null
   }
 
   function pickPromptReaders(totalSteps: number, totalPlayers: number) {
-  const readers: number[] = [];
+    const readers: number[] = [];
 
-  const startIndex = Math.floor(Math.random() * Math.max(totalPlayers, 1));
+    const startIndex = Math.floor(Math.random() * Math.max(totalPlayers, 1));
 
-  for (let i = 0; i < totalSteps; i++) {
-    readers.push((startIndex + i) % Math.max(totalPlayers, 1));
+    for (let i = 0; i < totalSteps; i++) {
+      readers.push((startIndex + i) % Math.max(totalPlayers, 1));
+    }
+
+    setPromptReaders(readers);
+    return readers;
   }
-
-  setPromptReaders(readers);
-  return readers;
-}
 
   async function loadJoinedPlayers(code: string) {
     const { data, error } = await supabase
@@ -374,7 +429,9 @@ const [draftBeliefOfferId, setDraftBeliefOfferId] = useState<string | null>(null
 
     setMultiplayerStep(data.current_step);
     setCurrentReceiverIndex(data.current_receiver_index ?? 0);
-    setPromptReaders(Array.isArray(data.prompt_readers) ? data.prompt_readers : []);
+    setPromptReaders(
+      Array.isArray(data.prompt_readers) ? data.prompt_readers : [],
+    );
     setPromptReadAloudStep(data.prompt_read_aloud_step ?? -1);
   }
   async function loadPlayerJourneys(code: string, players: RoomPlayer[]) {
@@ -574,8 +631,7 @@ const [draftBeliefOfferId, setDraftBeliefOfferId] = useState<string | null>(null
             setMode("multi");
           }
 
-         
-  if (mode === "multiLobby") {
+          if (mode === "multiLobby") {
             setMode("multi");
           }
         },
@@ -619,16 +675,16 @@ const [draftBeliefOfferId, setDraftBeliefOfferId] = useState<string | null>(null
       supabase.removeChannel(beliefOffersChannel);
     };
   }, [roomCode]);
-useEffect(() => {
-  const stepCard = document.getElementById("step-card");
+  useEffect(() => {
+    const stepCard = document.getElementById("step-card");
 
-  if (stepCard) {
-    stepCard.scrollIntoView({
-      behavior: "auto",
-      block: "start",
-    });
-  }
-}, [multiplayerStep, currentStep, promptReadAloudStep]);
+    if (stepCard) {
+      stepCard.scrollIntoView({
+        behavior: "auto",
+        block: "start",
+      });
+    }
+  }, [multiplayerStep, currentStep, promptReadAloudStep]);
   const cardButtonStyle = (isSelected: boolean) => ({
     border: isSelected
       ? "4px solid #0f766e"
@@ -922,8 +978,9 @@ useEffect(() => {
                 color: "#52606d",
               }}
             >
-              Think of a situation, coose an emotion, describe what happened, notice the belief or story
-              you are carrying, and choose a response with awareness.
+              Think of a situation, choose an emotion, describe what happened,
+              notice the belief or story you are carrying, and choose a response
+              with awareness.
             </p>
 
             <p
@@ -972,7 +1029,9 @@ useEffect(() => {
                   cursor: "pointer",
                 }}
               >
-                <h2 style={{ margin: 0, fontSize: "26px" }}>Solo Mode</h2>
+                <h2 style={{ margin: 0, fontSize: "26px" }}>
+                  Guided Solo Mode
+                </h2>
                 <p
                   style={{
                     marginTop: "12px",
@@ -982,7 +1041,8 @@ useEffect(() => {
                     color: "#52606d",
                   }}
                 >
-                  A guided private reflection mode for personal emotional exploration.
+                  A guided private reflection mode for personal emotional
+                  exploration.
                 </p>
               </button>
 
@@ -1062,7 +1122,9 @@ useEffect(() => {
                   cursor: "pointer",
                 }}
               >
-                <h2 style={{ margin: 0, fontSize: "26px" }}>Multiplayer Mode</h2>
+                <h2 style={{ margin: 0, fontSize: "26px" }}>
+                  Guided Multiplayer Mode
+                </h2>
                 <p
                   style={{
                     marginTop: "12px",
@@ -1072,8 +1134,8 @@ useEffect(() => {
                     color: "#52606d",
                   }}
                 >
-                  A guided reflection room for you and others
-                  to explore your emotions together.
+                  A guided reflection room for you and others to explore your
+                  emotions together.
                 </p>
               </button>
 
@@ -1101,7 +1163,9 @@ useEffect(() => {
                   cursor: "pointer",
                 }}
               >
-                <h2 style={{ margin: 0, fontSize: "26px" }}>Free Exploration</h2>
+                <h2 style={{ margin: 0, fontSize: "26px" }}>
+                  Free Exploration
+                </h2>
                 <p
                   style={{
                     marginTop: "12px",
@@ -1268,7 +1332,7 @@ useEffect(() => {
               Phyllis, Cara, and Hui Qin
             </p>
 
-              <p style={{ marginBottom: "28px" }}>
+            <p style={{ marginBottom: "28px" }}>
               Big thanks to my beta testers for making this game usable;
               <br />
               Laureen, Elise, Mei Teng, Elizabeth, Atassha and Elsa!
@@ -1288,63 +1352,61 @@ useEffect(() => {
       </main>
     );
   }
-if (mode === "free") {
-  return (
-    <main style={pageStyle}>
-      <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
-        <button
-          onClick={() => setMode("home")}
-          style={{ ...secondaryButtonStyle, marginBottom: "24px" }}
-        >
-          ← Back
-        </button>
-
-        <section style={panelStyle}>
-          <h1 style={{ marginTop: 0, fontSize: "42px" }}>
-            Free Exploration
-          </h1>
-
-          <p
-            style={{
-              fontSize: "18px",
-              color: "#52606d",
-              lineHeight: 1.7,
-            }}
+  if (mode === "free") {
+    return (
+      <main style={pageStyle}>
+        <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
+          <button
+            onClick={() => setMode("home")}
+            style={{ ...secondaryButtonStyle, marginBottom: "24px" }}
           >
-            Browse all cards freely. There are no steps in this mode.
-          </p>
+            ← Back
+          </button>
 
-          <h2 style={{ marginTop: "32px" }}>Emotion Cards</h2>
+          <section style={panelStyle}>
+            <h1 style={{ marginTop: 0, fontSize: "42px" }}>Free Exploration</h1>
 
-          <CardGrid
-            cardsToShow={emotionCards}
-            selectedId={null}
-            onSelect={() => {}}
-            cardButtonStyle={cardButtonStyle}
-          />
+            <p
+              style={{
+                fontSize: "18px",
+                color: "#52606d",
+                lineHeight: 1.7,
+              }}
+            >
+              Browse all cards freely. There are no steps in this mode.
+            </p>
 
-          <h2 style={{ marginTop: "48px" }}>Belief Cards</h2>
+            <h2 style={{ marginTop: "32px" }}>Emotion Cards</h2>
 
-          <CardGrid
-            cardsToShow={beliefCards}
-            selectedId={null}
-            onSelect={() => {}}
-            cardButtonStyle={cardButtonStyle}
-          />
+            <CardGrid
+              cardsToShow={emotionCards}
+              selectedId={null}
+              onSelect={() => {}}
+              cardButtonStyle={cardButtonStyle}
+            />
 
-          <h2 style={{ marginTop: "48px" }}>Response Cards</h2>
+            <h2 style={{ marginTop: "48px" }}>Belief Cards</h2>
 
-          <CardGrid
-            cardsToShow={responseCards}
-            selectedId={null}
-            onSelect={() => {}}
-            cardButtonStyle={cardButtonStyle}
-          />
-        </section>
-      </div>
-    </main>
-  );
-}
+            <CardGrid
+              cardsToShow={beliefCards}
+              selectedId={null}
+              onSelect={() => {}}
+              cardButtonStyle={cardButtonStyle}
+            />
+
+            <h2 style={{ marginTop: "48px" }}>Response Cards</h2>
+
+            <CardGrid
+              cardsToShow={responseCards}
+              selectedId={null}
+              onSelect={() => {}}
+              cardButtonStyle={cardButtonStyle}
+            />
+          </section>
+        </div>
+      </main>
+    );
+  }
   if (mode === "multiLobby") {
     return (
       <main style={pageStyle}>
@@ -1523,7 +1585,8 @@ if (mode === "free") {
     const promptDefinitions = [
       {
         title: "Step 1 — Emotion",
-        prompt: "Think of a recent situation that affected you emotionally. It may be something everyone here experienced, or something personal to you. What emotion did you feel most strongly in that moment?",
+        prompt:
+          "Think of a recent situation that affected you emotionally. It may be something everyone here experienced, or something personal to you. What emotion did you feel most strongly in that moment?",
       },
       {
         title: "Step 2 — Situation",
@@ -1560,7 +1623,8 @@ if (mode === "free") {
       },
       {
         title: "Step 8 — Final Response",
-        prompt: "Review your original response. You may keep your original response or choose a different one.",
+        prompt:
+          "Review your original response. You may keep your original response or choose a different one.",
       },
       {
         title: "Step 9 — Reflection",
@@ -1616,21 +1680,21 @@ if (mode === "free") {
         ? activeJourney.customFinalResponse
         : responseCards.find((card) => card.id === activeJourney.finalResponse)
             ?.title;
-    
+
     const displayedBeliefText =
       multiplayerStep >= 7
         ? activeFinalBeliefText || activeBeliefText
         : activeBeliefText;
 
-const displayedEmotionText =
-  multiplayerStep >= 7
-    ? activeFinalEmotionText || activeEmotionText
-    : activeEmotionText;
+    const displayedEmotionText =
+      multiplayerStep >= 7
+        ? activeFinalEmotionText || activeEmotionText
+        : activeEmotionText;
 
-const displayedResponseText =
-  multiplayerStep >= 8
-    ? activeFinalResponseText || activeResponseText
-    : activeResponseText;
+    const displayedResponseText =
+      multiplayerStep >= 8
+        ? activeFinalResponseText || activeResponseText
+        : activeResponseText;
 
     async function updateActiveJourney(updates: Partial<PlayerJourney>) {
       if (myPlayerIndex < 0 || !myPlayerId || !roomCode) return;
@@ -1677,30 +1741,30 @@ const displayedResponseText =
       multiplayerJourneys.every((journey) =>
         Boolean(
           journey.emotion &&
-            (journey.emotion !== EMOTION_WILD_CARD_ID ||
-              (journey.customEmotion.trim().length > 0 &&
-                Boolean(journey.customEmotionConfirmed))),
+          (journey.emotion !== EMOTION_WILD_CARD_ID ||
+            (journey.customEmotion.trim().length > 0 &&
+              Boolean(journey.customEmotionConfirmed))),
         ),
       );
 
     const allPlayersSharedSituation =
-  journeysReady &&
-  multiplayerJourneys.every((journey) =>
-    Boolean(
-      journey.situationText.trim().length > 0 &&
-        Boolean(journey.situationTextConfirmed) &&
-        journey.situationSharedAloud,
-    ),
-  );
+      journeysReady &&
+      multiplayerJourneys.every((journey) =>
+        Boolean(
+          journey.situationText.trim().length > 0 &&
+          Boolean(journey.situationTextConfirmed) &&
+          journey.situationSharedAloud,
+        ),
+      );
 
     const allPlayersChoseBelief =
       journeysReady &&
       multiplayerJourneys.every((journey) =>
         Boolean(
           journey.belief &&
-            (journey.belief !== BELIEF_WILD_CARD_ID ||
-              (journey.customBelief.trim().length > 0 &&
-                Boolean(journey.customBeliefConfirmed))),
+          (journey.belief !== BELIEF_WILD_CARD_ID ||
+            (journey.customBelief.trim().length > 0 &&
+              Boolean(journey.customBeliefConfirmed))),
         ),
       );
 
@@ -1709,50 +1773,46 @@ const displayedResponseText =
       multiplayerJourneys.every((journey) => journey.timelineDeclared);
 
     const allPlayersChoseResponse =
-  journeysReady &&
-  multiplayerJourneys.every((journey) =>
-    Boolean(
-      journey.response &&
-        (journey.response !== RESPONSE_WILD_CARD_ID ||
-          (journey.customResponse.trim().length > 0 &&
-            Boolean(journey.customResponseConfirmed))) &&
-        (journey.responseReflection.trim().length === 0 ||
-          Boolean(journey.responseReflectionConfirmed)) &&
-        journey.responseReadyToShare,
-    ),
-  );
-const allPlayersSharedResponseAloud =
-  journeysReady &&
-  multiplayerJourneys.every((journey) => journey.responseSharedAloud);
+      journeysReady &&
+      multiplayerJourneys.every((journey) =>
+        Boolean(
+          journey.response &&
+          (journey.response !== RESPONSE_WILD_CARD_ID ||
+            (journey.customResponse.trim().length > 0 &&
+              Boolean(journey.customResponseConfirmed))) &&
+          (journey.responseReflection.trim().length === 0 ||
+            Boolean(journey.responseReflectionConfirmed)) &&
+          journey.responseReadyToShare,
+        ),
+      );
+    const allPlayersSharedResponseAloud =
+      journeysReady &&
+      multiplayerJourneys.every((journey) => journey.responseSharedAloud);
     const allPlayersReadyForLevel2 =
       journeysReady &&
       multiplayerJourneys.every((journey) => journey.readyForLevel2);
 
     const currentReceiver =
       joinedPlayers[currentReceiverIndex]?.player_name || "Player";
-const receiverJourney =
-  multiplayerJourneys[currentReceiverIndex] ?? createEmptyJourney();
+    const receiverJourney =
+      multiplayerJourneys[currentReceiverIndex] ?? createEmptyJourney();
 
-const receiverEmotionText =
-  receiverJourney.emotion === EMOTION_WILD_CARD_ID
-    ? receiverJourney.customEmotion
-    : emotionCards.find(
-        (card) => card.id === receiverJourney.emotion,
-      )?.title;
+    const receiverEmotionText =
+      receiverJourney.emotion === EMOTION_WILD_CARD_ID
+        ? receiverJourney.customEmotion
+        : emotionCards.find((card) => card.id === receiverJourney.emotion)
+            ?.title;
 
-const receiverBeliefText =
-  receiverJourney.belief === BELIEF_WILD_CARD_ID
-    ? receiverJourney.customBelief
-    : beliefCards.find(
-        (card) => card.id === receiverJourney.belief,
-      )?.title;
+    const receiverBeliefText =
+      receiverJourney.belief === BELIEF_WILD_CARD_ID
+        ? receiverJourney.customBelief
+        : beliefCards.find((card) => card.id === receiverJourney.belief)?.title;
 
-const receiverResponseText =
-  receiverJourney.response === RESPONSE_WILD_CARD_ID
-    ? receiverJourney.customResponse
-    : responseCards.find(
-        (card) => card.id === receiverJourney.response,
-      )?.title;
+    const receiverResponseText =
+      receiverJourney.response === RESPONSE_WILD_CARD_ID
+        ? receiverJourney.customResponse
+        : responseCards.find((card) => card.id === receiverJourney.response)
+            ?.title;
     const isActivePlayerReceiver = myPlayerIndex === currentReceiverIndex;
 
     const activePlayerOffer: BeliefOffer | undefined = beliefOffers.find(
@@ -1773,15 +1833,15 @@ const receiverResponseText =
       multiplayerJourneys.every((journey) =>
         Boolean(
           journey.finalBelief &&
-            (journey.finalBelief !== BELIEF_WILD_CARD_ID ||
-              (journey.customFinalBelief.trim().length > 0 &&
-                Boolean(journey.customFinalBeliefConfirmed))) &&
-            journey.finalEmotion &&
-            (journey.finalEmotion !== EMOTION_WILD_CARD_ID ||
-              (journey.customFinalEmotion.trim().length > 0 &&
-                Boolean(journey.customFinalEmotionConfirmed))) &&
-            journey.step7PicksConfirmed &&
-            journey.timelineRedeclared,
+          (journey.finalBelief !== BELIEF_WILD_CARD_ID ||
+            (journey.customFinalBelief.trim().length > 0 &&
+              Boolean(journey.customFinalBeliefConfirmed))) &&
+          journey.finalEmotion &&
+          (journey.finalEmotion !== EMOTION_WILD_CARD_ID ||
+            (journey.customFinalEmotion.trim().length > 0 &&
+              Boolean(journey.customFinalEmotionConfirmed))) &&
+          journey.step7PicksConfirmed &&
+          journey.timelineRedeclared,
         ),
       );
 
@@ -1790,10 +1850,10 @@ const receiverResponseText =
       multiplayerJourneys.every((journey) =>
         Boolean(
           journey.finalResponseConfirmed &&
-            journey.finalResponse &&
-            (journey.finalResponse !== RESPONSE_WILD_CARD_ID ||
-              (journey.customFinalResponse.trim().length > 0 &&
-                Boolean(journey.customFinalResponseConfirmed))),
+          journey.finalResponse &&
+          (journey.finalResponse !== RESPONSE_WILD_CARD_ID ||
+            (journey.customFinalResponse.trim().length > 0 &&
+              Boolean(journey.customFinalResponseConfirmed))),
         ),
       );
 
@@ -1803,7 +1863,7 @@ const receiverResponseText =
         Boolean(
           (journey.reflectionText.trim().length > 0 &&
             Boolean(journey.reflectionTextConfirmed)) ||
-            journey.reflectionSharedAloud,
+          journey.reflectionSharedAloud,
         ),
       );
 
@@ -1812,35 +1872,35 @@ const receiverResponseText =
         case 0:
           return Boolean(
             activeJourney.emotion &&
-              (activeJourney.emotion !== EMOTION_WILD_CARD_ID ||
-                (activeJourney.customEmotion.trim().length > 0 &&
-                  activeJourney.customEmotionConfirmed)),
+            (activeJourney.emotion !== EMOTION_WILD_CARD_ID ||
+              (activeJourney.customEmotion.trim().length > 0 &&
+                activeJourney.customEmotionConfirmed)),
           );
         case 1:
           return Boolean(
             activeJourney.situationText.trim().length > 0 &&
-              activeJourney.situationTextConfirmed &&
-              activeJourney.situationSharedAloud,
+            activeJourney.situationTextConfirmed &&
+            activeJourney.situationSharedAloud,
           );
         case 2:
           return Boolean(
             activeJourney.belief &&
-              (activeJourney.belief !== BELIEF_WILD_CARD_ID ||
-                (activeJourney.customBelief.trim().length > 0 &&
-                  activeJourney.customBeliefConfirmed)),
+            (activeJourney.belief !== BELIEF_WILD_CARD_ID ||
+              (activeJourney.customBelief.trim().length > 0 &&
+                activeJourney.customBeliefConfirmed)),
           );
         case 3:
           return Boolean(activeJourney.timelineDeclared);
         case 4:
           return Boolean(
             activeJourney.response &&
-              (activeJourney.response !== RESPONSE_WILD_CARD_ID ||
-                (activeJourney.customResponse.trim().length > 0 &&
-                  activeJourney.customResponseConfirmed)) &&
-              ((activeJourney.responseReflection.trim().length > 0 &&
-                activeJourney.responseReflectionConfirmed) ||
-                activeJourney.responseSharedAloud) &&
-              activeJourney.responseReadyToShare,
+            (activeJourney.response !== RESPONSE_WILD_CARD_ID ||
+              (activeJourney.customResponse.trim().length > 0 &&
+                activeJourney.customResponseConfirmed)) &&
+            ((activeJourney.responseReflection.trim().length > 0 &&
+              activeJourney.responseReflectionConfirmed) ||
+              activeJourney.responseSharedAloud) &&
+            activeJourney.responseReadyToShare,
           );
         case 5:
           return Boolean(activeJourney.readyForLevel2);
@@ -1851,29 +1911,29 @@ const receiverResponseText =
         case 7:
           return Boolean(
             activeJourney.finalBelief &&
-              (activeJourney.finalBelief !== BELIEF_WILD_CARD_ID ||
-                (activeJourney.customFinalBelief.trim().length > 0 &&
-                  activeJourney.customFinalBeliefConfirmed)) &&
-              activeJourney.finalEmotion &&
-              (activeJourney.finalEmotion !== EMOTION_WILD_CARD_ID ||
-                (activeJourney.customFinalEmotion.trim().length > 0 &&
-                  activeJourney.customFinalEmotionConfirmed)) &&
-              activeJourney.step7PicksConfirmed &&
-              activeJourney.timelineRedeclared,
+            (activeJourney.finalBelief !== BELIEF_WILD_CARD_ID ||
+              (activeJourney.customFinalBelief.trim().length > 0 &&
+                activeJourney.customFinalBeliefConfirmed)) &&
+            activeJourney.finalEmotion &&
+            (activeJourney.finalEmotion !== EMOTION_WILD_CARD_ID ||
+              (activeJourney.customFinalEmotion.trim().length > 0 &&
+                activeJourney.customFinalEmotionConfirmed)) &&
+            activeJourney.step7PicksConfirmed &&
+            activeJourney.timelineRedeclared,
           );
         case 8:
           return Boolean(
             activeJourney.finalResponseConfirmed &&
-              activeJourney.finalResponse &&
-              (activeJourney.finalResponse !== RESPONSE_WILD_CARD_ID ||
-                (activeJourney.customFinalResponse.trim().length > 0 &&
-                  activeJourney.customFinalResponseConfirmed)),
+            activeJourney.finalResponse &&
+            (activeJourney.finalResponse !== RESPONSE_WILD_CARD_ID ||
+              (activeJourney.customFinalResponse.trim().length > 0 &&
+                activeJourney.customFinalResponseConfirmed)),
           );
         case 9:
           return Boolean(
             (activeJourney.reflectionText.trim().length > 0 &&
               activeJourney.reflectionTextConfirmed) ||
-              activeJourney.reflectionSharedAloud,
+            activeJourney.reflectionSharedAloud,
           );
         default:
           return false;
@@ -2055,53 +2115,54 @@ const receiverResponseText =
               multiplayerStep !== 10 &&
               promptHasBeenRead && (
                 <>
-                 <h2 style={{ fontSize: "30px", marginTop: 0 }}>
-  Active Player:{" "}
-  {activePlayer?.player_name || "Unknown Player"}
-</h2>
+                  <h2 style={{ fontSize: "30px", marginTop: 0 }}>
+                    Active Player:{" "}
+                    {activePlayer?.player_name || "Unknown Player"}
+                  </h2>
 
-<div
-  style={{
-    position: "sticky",
-top: "16px",
-zIndex: 50,
-    marginTop: "14px",
-  marginBottom: "22px",
-  padding: "18px 20px",
-  borderRadius: "22px",
-  background:
-    "linear-gradient(135deg, rgba(224,247,250,0.95), rgba(236,253,245,0.92))",
-  border: "2px solid rgba(14,116,144,0.18)",
-  boxShadow: "0 10px 24px rgba(14,116,144,0.10)",
-  fontSize: "15px",
-  lineHeight: 1.7,
-  color: "#164e63",
-  backdropFilter: "blur(8px)",
-  }}
->
- <div
-  style={{
-    marginBottom: "10px",
-    fontWeight: "bold",
-    fontSize: "13px",
-    letterSpacing: "0.08em",
-    textTransform: "uppercase",
-    color: "#0f766e",
-  }}
->
-  My Emotion Timeline
-</div>{" "}
-  [
-  Situation:{" "}
-  <strong>{activeJourney.situationText || "Not chosen yet"}</strong>
-  {" "}– Belief:{" "}
-  <strong>{displayedBeliefText || "Not chosen yet"}</strong>
-  {" "}– Emotion:{" "}
-  <strong>{displayedEmotionText || "Not chosen yet"}</strong>
-  {" "}– Response:{" "}
-  <strong>{displayedResponseText || "Not chosen yet"}</strong>
-  ]
-</div>
+                  <div
+                    style={{
+                      position: "sticky",
+                      top: "16px",
+                      zIndex: 50,
+                      marginTop: "14px",
+                      marginBottom: "22px",
+                      padding: "18px 20px",
+                      borderRadius: "22px",
+                      background:
+                        "linear-gradient(135deg, rgba(224,247,250,0.95), rgba(236,253,245,0.92))",
+                      border: "2px solid rgba(14,116,144,0.18)",
+                      boxShadow: "0 10px 24px rgba(14,116,144,0.10)",
+                      fontSize: "15px",
+                      lineHeight: 1.7,
+                      color: "#164e63",
+                      backdropFilter: "blur(8px)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        marginBottom: "10px",
+                        fontWeight: "bold",
+                        fontSize: "13px",
+                        letterSpacing: "0.08em",
+                        textTransform: "uppercase",
+                        color: "#0f766e",
+                      }}
+                    >
+                      My Emotion Timeline
+                    </div>{" "}
+                    [ Situation:{" "}
+                    <strong>
+                      {activeJourney.situationText || "Not chosen yet"}
+                    </strong>{" "}
+                    – Belief:{" "}
+                    <strong>{displayedBeliefText || "Not chosen yet"}</strong> –
+                    Emotion:{" "}
+                    <strong>{displayedEmotionText || "Not chosen yet"}</strong>{" "}
+                    – Response:{" "}
+                    <strong>{displayedResponseText || "Not chosen yet"}</strong>
+                    ]
+                  </div>
                 </>
               )}
 
@@ -2130,7 +2191,10 @@ zIndex: 50,
                     }}
                   >
                     <strong>{promptReader}</strong>, read this prompt aloud to
-                    the table: “Think of a recent situation that affected you emotionally. It may be something everyone here experienced, or something personal to you. What emotion did you feel most strongly in that moment?”
+                    the table: “Think of a recent situation that affected you
+                    emotionally. It may be something everyone here experienced,
+                    or something personal to you. What emotion did you feel most
+                    strongly in that moment?”
                   </p>
 
                   <div
@@ -2181,7 +2245,9 @@ zIndex: 50,
 
                       <textarea
                         placeholder="What emotion are you feeling?"
-                        value={draftCustomEmotion || activeJourney.customEmotion}
+                        value={
+                          draftCustomEmotion || activeJourney.customEmotion
+                        }
                         onChange={(e) => setDraftCustomEmotion(e.target.value)}
                         style={{
                           width: "100%",
@@ -2195,11 +2261,18 @@ zIndex: 50,
                         }}
                       />
                       <ConfirmTextButton
-                        confirmed={Boolean(activeJourney.customEmotionConfirmed)}
-                        disabled={(draftCustomEmotion || activeJourney.customEmotion).trim().length === 0}
+                        confirmed={Boolean(
+                          activeJourney.customEmotionConfirmed,
+                        )}
+                        disabled={
+                          (
+                            draftCustomEmotion || activeJourney.customEmotion
+                          ).trim().length === 0
+                        }
                         onConfirm={() =>
                           updateActiveJourney({
-                            customEmotion: draftCustomEmotion || activeJourney.customEmotion,
+                            customEmotion:
+                              draftCustomEmotion || activeJourney.customEmotion,
                             customEmotionConfirmed: true,
                           })
                         }
@@ -2210,22 +2283,24 @@ zIndex: 50,
                   )}
 
                   {isHost && (
-                  <StatusList
-                    title="Step 1 Status"
-                    players={joinedPlayers.map((player) => player.player_name)}
-                    done={(index) => {
-                      const journey = multiplayerJourneys[index];
+                    <StatusList
+                      title="Step 1 Status"
+                      players={joinedPlayers.map(
+                        (player) => player.player_name,
+                      )}
+                      done={(index) => {
+                        const journey = multiplayerJourneys[index];
 
-                      if (!journey) return false;
+                        if (!journey) return false;
 
-                     return Boolean(
-                        journey.emotion &&
+                        return Boolean(
+                          journey.emotion &&
                           (journey.emotion !== EMOTION_WILD_CARD_ID ||
                             (journey.customEmotion.trim().length > 0 &&
                               Boolean(journey.customEmotionConfirmed))),
-                      );
-                    }}
-                  />
+                        );
+                      }}
+                    />
                   )}
 
                   <div style={{ marginTop: "24px" }}>
@@ -2246,7 +2321,10 @@ zIndex: 50,
                         Continue when everyone is ready
                       </button>
                     )}
-                    {!isHost && renderReadyForHostNotice(isMyCurrentStepComplete(multiplayerStep))}
+                    {!isHost &&
+                      renderReadyForHostNotice(
+                        isMyCurrentStepComplete(multiplayerStep),
+                      )}
                   </div>
                 </div>
               )}
@@ -2293,7 +2371,8 @@ zIndex: 50,
                     </p>
 
                     <p style={{ color: "#52606d", lineHeight: 1.6 }}>
-                      Type one short sentence about what happened. Confirm it, then share it aloud and click “I shared this aloud”.
+                      Type one short sentence about what happened. Confirm it,
+                      then share it aloud and click “I shared this aloud”.
                     </p>
 
                     <textarea
@@ -2313,10 +2392,15 @@ zIndex: 50,
                     />
                     <ConfirmTextButton
                       confirmed={Boolean(activeJourney.situationTextConfirmed)}
-                      disabled={(draftSituationText || activeJourney.situationText).trim().length === 0}
+                      disabled={
+                        (
+                          draftSituationText || activeJourney.situationText
+                        ).trim().length === 0
+                      }
                       onConfirm={() =>
                         updateActiveJourney({
-                          situationText: draftSituationText || activeJourney.situationText,
+                          situationText:
+                            draftSituationText || activeJourney.situationText,
                           situationTextConfirmed: true,
                           situationSharedAloud: false,
                         })
@@ -2326,14 +2410,15 @@ zIndex: 50,
                     />
 
                     <button
-  disabled={!activeJourney.situationTextConfirmed}
-  onClick={() =>
-    updateActiveJourney({
-      situationText: draftSituationText || activeJourney.situationText,
-      situationTextConfirmed: true,
-      situationSharedAloud: true,
-    })
-  }
+                      disabled={!activeJourney.situationTextConfirmed}
+                      onClick={() =>
+                        updateActiveJourney({
+                          situationText:
+                            draftSituationText || activeJourney.situationText,
+                          situationTextConfirmed: true,
+                          situationSharedAloud: true,
+                        })
+                      }
                       style={{
                         marginTop: "18px",
                         padding: "12px 18px",
@@ -2348,8 +2433,12 @@ zIndex: 50,
                           ? "#115e59"
                           : "#52606d",
                         fontWeight: "bold",
-                        opacity: activeJourney.situationTextConfirmed ? 1 : 0.45,
-                        cursor: activeJourney.situationTextConfirmed ? "pointer" : "not-allowed",
+                        opacity: activeJourney.situationTextConfirmed
+                          ? 1
+                          : 0.45,
+                        cursor: activeJourney.situationTextConfirmed
+                          ? "pointer"
+                          : "not-allowed",
                       }}
                     >
                       {activeJourney.situationSharedAloud
@@ -2359,88 +2448,96 @@ zIndex: 50,
                   </div>
 
                   {isHost && (
-                  <div
-  style={{
-    marginTop: "28px",
-    padding: "20px",
-    borderRadius: "20px",
-    background: "rgba(255,255,255,0.75)",
-  }}
->
-  <h4 style={{ marginTop: 0 }}>Step 2 Status</h4>
+                    <div
+                      style={{
+                        marginTop: "28px",
+                        padding: "20px",
+                        borderRadius: "20px",
+                        background: "rgba(255,255,255,0.75)",
+                      }}
+                    >
+                      <h4 style={{ marginTop: 0 }}>Step 2 Status</h4>
 
-  {joinedPlayers.map((player, index) => {
-    const journey = multiplayerJourneys[index];
+                      {joinedPlayers.map((player, index) => {
+                        const journey = multiplayerJourneys[index];
 
-    const typedConfirmed = Boolean(
-      journey?.situationText?.trim().length &&
-        journey?.situationTextConfirmed,
-    );
+                        const typedConfirmed = Boolean(
+                          journey?.situationText?.trim().length &&
+                          journey?.situationTextConfirmed,
+                        );
 
-    const sharedAloud = Boolean(journey?.situationSharedAloud);
+                        const sharedAloud = Boolean(
+                          journey?.situationSharedAloud,
+                        );
 
-    return (
-      <div
-        key={player.id}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: "12px",
-          padding: "10px 0",
-          borderTop:
-            index === 0 ? "none" : "1px solid rgba(148,163,184,0.35)",
-          fontSize: "17px",
-        }}
-      >
-        <span>{player.player_name}</span>
+                        return (
+                          <div
+                            key={player.id}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              gap: "12px",
+                              padding: "10px 0",
+                              borderTop:
+                                index === 0
+                                  ? "none"
+                                  : "1px solid rgba(148,163,184,0.35)",
+                              fontSize: "17px",
+                            }}
+                          >
+                            <span>{player.player_name}</span>
 
-        <div
-          style={{
-            display: "flex",
-            gap: "8px",
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <span
-            title="Typed and confirmed"
-            style={{
-              padding: "6px 10px",
-              borderRadius: "999px",
-              background: typedConfirmed ? "#ccfbf1" : "#f1f5f9",
-              color: typedConfirmed ? "#115e59" : "#64748b",
-              fontWeight: "bold",
-              fontSize: "13px",
-              border: typedConfirmed
-                ? "1px solid #0f766e"
-                : "1px solid #cbd5e1",
-            }}
-          >
-            {typedConfirmed ? "✓" : "○"} Typed
-          </span>
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: "8px",
+                                alignItems: "center",
+                                flexWrap: "wrap",
+                              }}
+                            >
+                              <span
+                                title="Typed and confirmed"
+                                style={{
+                                  padding: "6px 10px",
+                                  borderRadius: "999px",
+                                  background: typedConfirmed
+                                    ? "#ccfbf1"
+                                    : "#f1f5f9",
+                                  color: typedConfirmed ? "#115e59" : "#64748b",
+                                  fontWeight: "bold",
+                                  fontSize: "13px",
+                                  border: typedConfirmed
+                                    ? "1px solid #0f766e"
+                                    : "1px solid #cbd5e1",
+                                }}
+                              >
+                                {typedConfirmed ? "✓" : "○"} Typed
+                              </span>
 
-          <span
-            title="Shared aloud"
-            style={{
-              padding: "6px 10px",
-              borderRadius: "999px",
-              background: sharedAloud ? "#ccfbf1" : "#f1f5f9",
-              color: sharedAloud ? "#115e59" : "#64748b",
-              fontWeight: "bold",
-              fontSize: "13px",
-              border: sharedAloud
-                ? "1px solid #0f766e"
-                : "1px solid #cbd5e1",
-            }}
-          >
-            {sharedAloud ? "✓" : "○"} Shared
-          </span>
-        </div>
-      </div>
-    );
-  })}
-</div>
+                              <span
+                                title="Shared aloud"
+                                style={{
+                                  padding: "6px 10px",
+                                  borderRadius: "999px",
+                                  background: sharedAloud
+                                    ? "#ccfbf1"
+                                    : "#f1f5f9",
+                                  color: sharedAloud ? "#115e59" : "#64748b",
+                                  fontWeight: "bold",
+                                  fontSize: "13px",
+                                  border: sharedAloud
+                                    ? "1px solid #0f766e"
+                                    : "1px solid #cbd5e1",
+                                }}
+                              >
+                                {sharedAloud ? "✓" : "○"} Shared
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   )}
 
                   <div style={{ marginTop: "24px" }}>
@@ -2474,7 +2571,9 @@ zIndex: 50,
                         </button>
                       </>
                     ) : (
-                      renderReadyForHostNotice(isMyCurrentStepComplete(multiplayerStep))
+                      renderReadyForHostNotice(
+                        isMyCurrentStepComplete(multiplayerStep),
+                      )
                     )}
                   </div>
                 </div>
@@ -2505,7 +2604,8 @@ zIndex: 50,
                     }}
                   >
                     <strong>{promptReader}</strong>, read this prompt aloud to
-                    the table: “What belief might be shaping how you understand what happened?”
+                    the table: “What belief might be shaping how you understand
+                    what happened?”
                   </p>
 
                   <div
@@ -2571,10 +2671,15 @@ zIndex: 50,
                       />
                       <ConfirmTextButton
                         confirmed={Boolean(activeJourney.customBeliefConfirmed)}
-                        disabled={(draftCustomBelief || activeJourney.customBelief).trim().length === 0}
+                        disabled={
+                          (
+                            draftCustomBelief || activeJourney.customBelief
+                          ).trim().length === 0
+                        }
                         onConfirm={() =>
                           updateActiveJourney({
-                            customBelief: draftCustomBelief || activeJourney.customBelief,
+                            customBelief:
+                              draftCustomBelief || activeJourney.customBelief,
                             customBeliefConfirmed: true,
                           })
                         }
@@ -2585,20 +2690,22 @@ zIndex: 50,
                   )}
 
                   {isHost && (
-                  <StatusList
-                    title="Step 3 Status"
-                    players={joinedPlayers.map((player) => player.player_name)}
-                    done={(index) => {
-                      const journey = multiplayerJourneys[index];
-                      if (!journey) return false;
-                      return Boolean(
-                        journey.belief &&
+                    <StatusList
+                      title="Step 3 Status"
+                      players={joinedPlayers.map(
+                        (player) => player.player_name,
+                      )}
+                      done={(index) => {
+                        const journey = multiplayerJourneys[index];
+                        if (!journey) return false;
+                        return Boolean(
+                          journey.belief &&
                           (journey.belief !== BELIEF_WILD_CARD_ID ||
                             (journey.customBelief.trim().length > 0 &&
                               Boolean(journey.customBeliefConfirmed))),
-                      );
-                    }}
-                  />
+                        );
+                      }}
+                    />
                   )}
 
                   <div style={{ marginTop: "24px" }}>
@@ -2631,7 +2738,9 @@ zIndex: 50,
                         </button>
                       </>
                     ) : (
-                      renderReadyForHostNotice(isMyCurrentStepComplete(multiplayerStep))
+                      renderReadyForHostNotice(
+                        isMyCurrentStepComplete(multiplayerStep),
+                      )
                     )}
                   </div>
                 </div>
@@ -2662,7 +2771,8 @@ zIndex: 50,
                     }}
                   >
                     <strong>{promptReader}</strong>, read this prompt aloud to
-                    the table: “Take turns to declare your emotion timeline aloud.”
+                    the table: “Take turns to declare your emotion timeline
+                    aloud.”
                   </p>
 
                   <div
@@ -2717,13 +2827,15 @@ zIndex: 50,
                   </button>
 
                   {isHost && (
-                  <StatusList
-                    title="Step 4 Status"
-                    players={joinedPlayers.map((player) => player.player_name)}
-                    done={(index) =>
-                      Boolean(multiplayerJourneys[index]?.timelineDeclared)
-                    }
-                  />
+                    <StatusList
+                      title="Step 4 Status"
+                      players={joinedPlayers.map(
+                        (player) => player.player_name,
+                      )}
+                      done={(index) =>
+                        Boolean(multiplayerJourneys[index]?.timelineDeclared)
+                      }
+                    />
                   )}
 
                   <div style={{ marginTop: "24px" }}>
@@ -2757,7 +2869,9 @@ zIndex: 50,
                         </button>
                       </>
                     ) : (
-                      renderReadyForHostNotice(isMyCurrentStepComplete(multiplayerStep))
+                      renderReadyForHostNotice(
+                        isMyCurrentStepComplete(multiplayerStep),
+                      )
                     )}
                   </div>
                 </div>
@@ -2842,7 +2956,9 @@ zIndex: 50,
 
                       <textarea
                         placeholder="What response are you willing to try?"
-                        value={draftCustomResponse || activeJourney.customResponse}
+                        value={
+                          draftCustomResponse || activeJourney.customResponse
+                        }
                         onChange={(e) => setDraftCustomResponse(e.target.value)}
                         style={{
                           width: "100%",
@@ -2856,11 +2972,19 @@ zIndex: 50,
                         }}
                       />
                       <ConfirmTextButton
-                        confirmed={Boolean(activeJourney.customResponseConfirmed)}
-                        disabled={(draftCustomResponse || activeJourney.customResponse).trim().length === 0}
+                        confirmed={Boolean(
+                          activeJourney.customResponseConfirmed,
+                        )}
+                        disabled={
+                          (
+                            draftCustomResponse || activeJourney.customResponse
+                          ).trim().length === 0
+                        }
                         onConfirm={() =>
                           updateActiveJourney({
-                            customResponse: draftCustomResponse || activeJourney.customResponse,
+                            customResponse:
+                              draftCustomResponse ||
+                              activeJourney.customResponse,
                             customResponseConfirmed: true,
                             responseReadyToShare: false,
                           })
@@ -2891,8 +3015,13 @@ zIndex: 50,
 
                       <textarea
                         placeholder="Optional: What draws you to this response?"
-                        value={draftResponseReflection || activeJourney.responseReflection}
-                        onChange={(e) => setDraftResponseReflection(e.target.value)}
+                        value={
+                          draftResponseReflection ||
+                          activeJourney.responseReflection
+                        }
+                        onChange={(e) =>
+                          setDraftResponseReflection(e.target.value)
+                        }
                         style={{
                           width: "100%",
                           minHeight: "130px",
@@ -2905,11 +3034,20 @@ zIndex: 50,
                         }}
                       />
                       <ConfirmTextButton
-                        confirmed={Boolean(activeJourney.responseReflectionConfirmed)}
-                        disabled={(draftResponseReflection || activeJourney.responseReflection).trim().length === 0}
+                        confirmed={Boolean(
+                          activeJourney.responseReflectionConfirmed,
+                        )}
+                        disabled={
+                          (
+                            draftResponseReflection ||
+                            activeJourney.responseReflection
+                          ).trim().length === 0
+                        }
                         onConfirm={() =>
                           updateActiveJourney({
-                            responseReflection: draftResponseReflection || activeJourney.responseReflection,
+                            responseReflection:
+                              draftResponseReflection ||
+                              activeJourney.responseReflection,
                             responseReflectionConfirmed: true,
                             responseSharedAloud: false,
                             responseReadyToShare: false,
@@ -2932,15 +3070,24 @@ zIndex: 50,
                         }}
                       >
                         <ConfirmTextButton
-                          confirmed={Boolean(activeJourney.responseReadyToShare)}
+                          confirmed={Boolean(
+                            activeJourney.responseReadyToShare,
+                          )}
                           disabled={
                             !(
                               activeJourney.response &&
-                              (activeJourney.response !== RESPONSE_WILD_CARD_ID ||
-                                (activeJourney.customResponse.trim().length > 0 &&
-                                  Boolean(activeJourney.customResponseConfirmed))) &&
-                              (activeJourney.responseReflection.trim().length === 0 ||
-                                Boolean(activeJourney.responseReflectionConfirmed))
+                              (activeJourney.response !==
+                                RESPONSE_WILD_CARD_ID ||
+                                (activeJourney.customResponse.trim().length >
+                                  0 &&
+                                  Boolean(
+                                    activeJourney.customResponseConfirmed,
+                                  ))) &&
+                              (activeJourney.responseReflection.trim()
+                                .length === 0 ||
+                                Boolean(
+                                  activeJourney.responseReflectionConfirmed,
+                                ))
                             )
                           }
                           onConfirm={() =>
@@ -2977,7 +3124,9 @@ zIndex: 50,
                             cursor: activeJourney.responseReadyToShare
                               ? "pointer"
                               : "not-allowed",
-                            opacity: activeJourney.responseReadyToShare ? 1 : 0.45,
+                            opacity: activeJourney.responseReadyToShare
+                              ? 1
+                              : 0.45,
                           }}
                         >
                           {activeJourney.responseSharedAloud
@@ -2985,31 +3134,31 @@ zIndex: 50,
                             : "I shared this aloud"}
                         </button>
                       </div>
-
-                      
                     </div>
                   )}
 
                   {isHost && (
-                  <StatusList
-                    title="Ready to share in circle"
-                    players={joinedPlayers.map((player) => player.player_name)}
-                    done={(index) => {
-  const journey = multiplayerJourneys[index];
+                    <StatusList
+                      title="Ready to share in circle"
+                      players={joinedPlayers.map(
+                        (player) => player.player_name,
+                      )}
+                      done={(index) => {
+                        const journey = multiplayerJourneys[index];
 
-  if (!journey) return false;
+                        if (!journey) return false;
 
-  return Boolean(
-  journey.response &&
-    (journey.response !== RESPONSE_WILD_CARD_ID ||
-      (journey.customResponse.trim().length > 0 &&
-        Boolean(journey.customResponseConfirmed))) &&
-    (journey.responseReflection.trim().length === 0 ||
-      Boolean(journey.responseReflectionConfirmed)) &&
-    journey.responseReadyToShare,
-);
-}}
-                  />
+                        return Boolean(
+                          journey.response &&
+                          (journey.response !== RESPONSE_WILD_CARD_ID ||
+                            (journey.customResponse.trim().length > 0 &&
+                              Boolean(journey.customResponseConfirmed))) &&
+                          (journey.responseReflection.trim().length === 0 ||
+                            Boolean(journey.responseReflectionConfirmed)) &&
+                          journey.responseReadyToShare,
+                        );
+                      }}
+                    />
                   )}
 
                   <div style={{ marginTop: "24px" }}>
@@ -3025,28 +3174,32 @@ zIndex: 50,
                           Back
                         </button>
 
-                       <button
-  onClick={async () => {
-    if (allPlayersSharedResponseAloud) {
-      await updateRoomStep(5);
-    }
-  }}
-  disabled={!allPlayersSharedResponseAloud}
-  style={{
-    ...primaryButtonStyle,
-    opacity: allPlayersChoseResponse ? 1 : 0.4,
-    cursor: allPlayersSharedResponseAloud ? "pointer" : "default",
-  }}
->
-  {allPlayersSharedResponseAloud
-    ? "Proceed to next level"
-    : allPlayersChoseResponse
-      ? "Circle sharing in progress"
-      : "Waiting for everyone to be ready"}
-</button>
+                        <button
+                          onClick={async () => {
+                            if (allPlayersSharedResponseAloud) {
+                              await updateRoomStep(5);
+                            }
+                          }}
+                          disabled={!allPlayersSharedResponseAloud}
+                          style={{
+                            ...primaryButtonStyle,
+                            opacity: allPlayersChoseResponse ? 1 : 0.4,
+                            cursor: allPlayersSharedResponseAloud
+                              ? "pointer"
+                              : "default",
+                          }}
+                        >
+                          {allPlayersSharedResponseAloud
+                            ? "Proceed to next level"
+                            : allPlayersChoseResponse
+                              ? "Circle sharing in progress"
+                              : "Waiting for everyone to be ready"}
+                        </button>
                       </>
                     ) : (
-                      renderReadyForHostNotice(isMyCurrentStepComplete(multiplayerStep))
+                      renderReadyForHostNotice(
+                        isMyCurrentStepComplete(multiplayerStep),
+                      )
                     )}
                   </div>
                 </div>
@@ -3117,13 +3270,15 @@ zIndex: 50,
                   </button>
 
                   {isHost && (
-                  <StatusList
-                    title="Ready for Level 2"
-                    players={joinedPlayers.map((player) => player.player_name)}
-                    done={(index) =>
-                      Boolean(multiplayerJourneys[index]?.readyForLevel2)
-                    }
-                  />
+                    <StatusList
+                      title="Ready for Level 2"
+                      players={joinedPlayers.map(
+                        (player) => player.player_name,
+                      )}
+                      done={(index) =>
+                        Boolean(multiplayerJourneys[index]?.readyForLevel2)
+                      }
+                    />
                   )}
 
                   <div style={{ marginTop: "24px" }}>
@@ -3159,7 +3314,9 @@ zIndex: 50,
                         </button>
                       </>
                     ) : (
-                      renderReadyForHostNotice(isMyCurrentStepComplete(multiplayerStep))
+                      renderReadyForHostNotice(
+                        isMyCurrentStepComplete(multiplayerStep),
+                      )
                     )}
                   </div>
                 </div>
@@ -3181,44 +3338,48 @@ zIndex: 50,
                     title="Step 6 — Alternative Beliefs"
                     label={`Receiving: ${currentReceiver}`}
                   />
-<div
-  style={{
-      position: "sticky",
-    top: "16px",
-    zIndex: 60,
-    marginTop: "18px",
-    marginBottom: "24px",
-    padding: "18px",
-    borderRadius: "20px",
-    background: "#f8fafc",
-    border: "2px solid #94a3b8",
-    fontSize: "15px",
-    lineHeight: 1.6,
-    color: "#334155",
-  }}
->
-  <p
-    style={{
-      marginTop: 0,
-      marginBottom: "10px",
-      fontWeight: "bold",
-      color: "#0f172a",
-    }}
-  >
-    Receiver’s Emotion Timeline: {currentReceiver}
-  </p>
+                  <div
+                    style={{
+                      position: "sticky",
+                      top: "16px",
+                      zIndex: 60,
+                      marginTop: "18px",
+                      marginBottom: "24px",
+                      padding: "18px",
+                      borderRadius: "20px",
+                      background: "#f8fafc",
+                      border: "2px solid #94a3b8",
+                      fontSize: "15px",
+                      lineHeight: 1.6,
+                      color: "#334155",
+                    }}
+                  >
+                    <p
+                      style={{
+                        marginTop: 0,
+                        marginBottom: "10px",
+                        fontWeight: "bold",
+                        color: "#0f172a",
+                      }}
+                    >
+                      Receiver’s Emotion Timeline: {currentReceiver}
+                    </p>
 
-  <p style={{ margin: 0 }}>
-  Situation:{" "}
-  <strong>{receiverJourney.situationText || "Not shared yet"}</strong>
-  {" "}– Belief:{" "}
-  <strong>{receiverBeliefText || "Not chosen yet"}</strong>
-  {" "}– Emotion:{" "}
-  <strong>{receiverEmotionText || "Not chosen yet"}</strong>
-  {" "}– Response:{" "}
-  <strong>{receiverResponseText || "Not chosen yet"}</strong>
-</p>
-</div>
+                    <p style={{ margin: 0 }}>
+                      Situation:{" "}
+                      <strong>
+                        {receiverJourney.situationText || "Not shared yet"}
+                      </strong>{" "}
+                      – Belief:{" "}
+                      <strong>{receiverBeliefText || "Not chosen yet"}</strong>{" "}
+                      – Emotion:{" "}
+                      <strong>{receiverEmotionText || "Not chosen yet"}</strong>{" "}
+                      – Response:{" "}
+                      <strong>
+                        {receiverResponseText || "Not chosen yet"}
+                      </strong>
+                    </p>
+                  </div>
                   <p
                     style={{
                       fontSize: "18px",
@@ -3314,11 +3475,11 @@ zIndex: 50,
                             <button
                               key={card.id}
                               onClick={() => {
-  setDraftBeliefOfferId(card.id);
-}}
+                                setDraftBeliefOfferId(card.id);
+                              }}
                               style={cardButtonStyle(
-  draftBeliefOfferId === card.id
-)}
+                                draftBeliefOfferId === card.id,
+                              )}
                             >
                               <img
                                 src={card.image}
@@ -3329,100 +3490,108 @@ zIndex: 50,
                           ))}
                       </div>
                       <button
-  disabled={!draftBeliefOfferId}
-  onClick={async () => {
-  if (myPlayerIndex < 0 || !roomCode || !draftBeliefOfferId) return;
+                        disabled={!draftBeliefOfferId}
+                        onClick={async () => {
+                          if (
+                            myPlayerIndex < 0 ||
+                            !roomCode ||
+                            !draftBeliefOfferId
+                          )
+                            return;
 
-  const confirmedBeliefOfferId = draftBeliefOfferId;
+                          const confirmedBeliefOfferId = draftBeliefOfferId;
 
-  setBeliefOffers((offers) => {
-    const withoutCurrentOffer = offers.filter(
-      (offer) =>
-        !(
-          offer.receiverIndex === currentReceiverIndex &&
-          offer.giverIndex === myPlayerIndex
-        ),
-    );
+                          setBeliefOffers((offers) => {
+                            const withoutCurrentOffer = offers.filter(
+                              (offer) =>
+                                !(
+                                  offer.receiverIndex ===
+                                    currentReceiverIndex &&
+                                  offer.giverIndex === myPlayerIndex
+                                ),
+                            );
 
-    return [
-      ...withoutCurrentOffer,
-      {
-        receiverIndex: currentReceiverIndex,
-        giverIndex: myPlayerIndex,
-        beliefId: confirmedBeliefOfferId,
-      },
-    ];
-  });
+                            return [
+                              ...withoutCurrentOffer,
+                              {
+                                receiverIndex: currentReceiverIndex,
+                                giverIndex: myPlayerIndex,
+                                beliefId: confirmedBeliefOfferId,
+                              },
+                            ];
+                          });
 
-  await supabase.from("belief_offers").upsert(
-    {
-      room_code: roomCode,
-      receiver_index: currentReceiverIndex,
-      giver_index: myPlayerIndex,
-      belief_id: confirmedBeliefOfferId,
-      updated_at: new Date().toISOString(),
-    },
-    {
-      onConflict: "room_code,receiver_index,giver_index",
-    },
-  );
+                          await supabase.from("belief_offers").upsert(
+                            {
+                              room_code: roomCode,
+                              receiver_index: currentReceiverIndex,
+                              giver_index: myPlayerIndex,
+                              belief_id: confirmedBeliefOfferId,
+                              updated_at: new Date().toISOString(),
+                            },
+                            {
+                              onConflict:
+                                "room_code,receiver_index,giver_index",
+                            },
+                          );
 
-  setDraftBeliefOfferId(null);
-}}
-  style={{
-    ...primaryButtonStyle,
-    marginTop: "24px",
-    opacity: draftBeliefOfferId ? 1 : 0.45,
-    cursor: draftBeliefOfferId ? "pointer" : "not-allowed",
-  }}
->
-  Confirm this alternative belief
-</button>
+                          setDraftBeliefOfferId(null);
+                        }}
+                        style={{
+                          ...primaryButtonStyle,
+                          marginTop: "24px",
+                          opacity: draftBeliefOfferId ? 1 : 0.45,
+                          cursor: draftBeliefOfferId
+                            ? "pointer"
+                            : "not-allowed",
+                        }}
+                      >
+                        Confirm this alternative belief
+                      </button>
                     </>
                   )}
 
                   {isHost && (
-                  <div
-                    style={{
-                      marginTop: "28px",
-                      padding: "20px",
-                      borderRadius: "20px",
-                      background: "rgba(255,255,255,0.75)",
-                    }}
-                  >
-                    <h4 style={{ marginTop: 0 }}>
-  Anonymous offers for {currentReceiver}
-</h4>
+                    <div
+                      style={{
+                        marginTop: "28px",
+                        padding: "20px",
+                        borderRadius: "20px",
+                        background: "rgba(255,255,255,0.75)",
+                      }}
+                    >
+                      <h4 style={{ marginTop: 0 }}>
+                        Anonymous offers for {currentReceiver}
+                      </h4>
 
-                    {joinedPlayers.map((player, index) => {
-                      if (index === currentReceiverIndex) {
+                      {joinedPlayers.map((player, index) => {
+                        if (index === currentReceiverIndex) {
+                          return (
+                            <p
+                              key={player.id}
+                              style={{ margin: "8px 0", fontSize: "17px" }}
+                            >
+                              — {player.player_name} is receiving
+                            </p>
+                          );
+                        }
+
+                        const hasOffered = beliefOffers.some(
+                          (offer) =>
+                            offer.receiverIndex === currentReceiverIndex &&
+                            offer.giverIndex === index,
+                        );
+
                         return (
                           <p
                             key={player.id}
                             style={{ margin: "8px 0", fontSize: "17px" }}
                           >
-                            — {player.player_name} is receiving
+                            {hasOffered ? "✓" : "○"} {player.player_name}
                           </p>
                         );
-                      }
-
-                      const hasOffered = beliefOffers.some(
-                        (offer) =>
-                          offer.receiverIndex === currentReceiverIndex &&
-                          offer.giverIndex === index,
-                      );
-
-                      return (
-                        <p
-                          key={player.id}
-                          style={{ margin: "8px 0", fontSize: "17px" }}
-                        >
-                          {hasOffered ? "✓" : "○"} {player.player_name}
-                        </p>
-                      );
-                    })}
-                  </div>
-
+                      })}
+                    </div>
                   )}
 
                   {isHost && currentReceiverIsComplete && (
@@ -3439,7 +3608,6 @@ zIndex: 50,
                       alternative beliefs.
                     </div>
                   )}
-
 
                   <div style={{ marginTop: "28px" }}>
                     {isHost ? (
@@ -3496,7 +3664,9 @@ zIndex: 50,
                         )}
                       </>
                     ) : (
-                      renderReadyForHostNotice(isMyCurrentStepComplete(multiplayerStep))
+                      renderReadyForHostNotice(
+                        isMyCurrentStepComplete(multiplayerStep),
+                      )
                     )}
                   </div>
                 </div>
@@ -3558,7 +3728,7 @@ zIndex: 50,
                         .map((offer) => ({
                           beliefId: offer.beliefId,
                           label: "Alternative belief",
-                          })),
+                        })),
                     ]
                       .filter((item, index, array) => {
                         if (!item.beliefId) return false;
@@ -3577,10 +3747,8 @@ zIndex: 50,
                         if (!card) return null;
 
                         const isSelected =
-                           (
-    activeJourney.finalBelief ||
-    activeJourney.belief
-  ) === card.id;
+                          (activeJourney.finalBelief ||
+                            activeJourney.belief) === card.id;
 
                         return (
                           <button
@@ -3598,11 +3766,9 @@ zIndex: 50,
                               })
                             }
                             style={cardButtonStyle(
-  (
-    activeJourney.finalBelief ||
-    activeJourney.belief
-  ) === card.id,
-)}
+                              (activeJourney.finalBelief ||
+                                activeJourney.belief) === card.id,
+                            )}
                           >
                             <div
                               style={{
@@ -3656,8 +3822,13 @@ zIndex: 50,
 
                       <textarea
                         placeholder="What belief do you choose now?"
-                        value={draftCustomFinalBelief || activeJourney.customFinalBelief}
-                        onChange={(e) => setDraftCustomFinalBelief(e.target.value)}
+                        value={
+                          draftCustomFinalBelief ||
+                          activeJourney.customFinalBelief
+                        }
+                        onChange={(e) =>
+                          setDraftCustomFinalBelief(e.target.value)
+                        }
                         style={{
                           width: "100%",
                           minHeight: "120px",
@@ -3670,11 +3841,20 @@ zIndex: 50,
                         }}
                       />
                       <ConfirmTextButton
-                        confirmed={Boolean(activeJourney.customFinalBeliefConfirmed)}
-                        disabled={(draftCustomFinalBelief || activeJourney.customFinalBelief).trim().length === 0}
+                        confirmed={Boolean(
+                          activeJourney.customFinalBeliefConfirmed,
+                        )}
+                        disabled={
+                          (
+                            draftCustomFinalBelief ||
+                            activeJourney.customFinalBelief
+                          ).trim().length === 0
+                        }
                         onConfirm={() =>
                           updateActiveJourney({
-                            customFinalBelief: draftCustomFinalBelief || activeJourney.customFinalBelief,
+                            customFinalBelief:
+                              draftCustomFinalBelief ||
+                              activeJourney.customFinalBelief,
                             customFinalBeliefConfirmed: true,
                             step7PicksConfirmed: false,
                             timelineRedeclared: false,
@@ -3725,11 +3905,9 @@ zIndex: 50,
                                 })
                               }
                               style={cardButtonStyle(
-  (
-    activeJourney.finalEmotion ||
-    activeJourney.emotion
-  ) === card.id,
-)}
+                                (activeJourney.finalEmotion ||
+                                  activeJourney.emotion) === card.id,
+                              )}
                             >
                               <img
                                 src={card.image}
@@ -3756,8 +3934,13 @@ zIndex: 50,
 
                             <textarea
                               placeholder="What emotion feels true now?"
-                              value={draftCustomFinalEmotion || activeJourney.customFinalEmotion}
-                              onChange={(e) => setDraftCustomFinalEmotion(e.target.value)}
+                              value={
+                                draftCustomFinalEmotion ||
+                                activeJourney.customFinalEmotion
+                              }
+                              onChange={(e) =>
+                                setDraftCustomFinalEmotion(e.target.value)
+                              }
                               style={{
                                 width: "100%",
                                 minHeight: "100px",
@@ -3770,11 +3953,20 @@ zIndex: 50,
                               }}
                             />
                             <ConfirmTextButton
-                              confirmed={Boolean(activeJourney.customFinalEmotionConfirmed)}
-                              disabled={(draftCustomFinalEmotion || activeJourney.customFinalEmotion).trim().length === 0}
+                              confirmed={Boolean(
+                                activeJourney.customFinalEmotionConfirmed,
+                              )}
+                              disabled={
+                                (
+                                  draftCustomFinalEmotion ||
+                                  activeJourney.customFinalEmotion
+                                ).trim().length === 0
+                              }
                               onConfirm={() =>
                                 updateActiveJourney({
-                                  customFinalEmotion: draftCustomFinalEmotion || activeJourney.customFinalEmotion,
+                                  customFinalEmotion:
+                                    draftCustomFinalEmotion ||
+                                    activeJourney.customFinalEmotion,
                                   customFinalEmotionConfirmed: true,
                                   step7PicksConfirmed: false,
                                   timelineRedeclared: false,
@@ -3795,7 +3987,9 @@ zIndex: 50,
                     activeJourney.finalEmotion &&
                     (activeJourney.finalEmotion !== EMOTION_WILD_CARD_ID ||
                       (activeJourney.customFinalEmotion.trim().length > 0 &&
-                        Boolean(activeJourney.customFinalEmotionConfirmed))) && (
+                        Boolean(
+                          activeJourney.customFinalEmotionConfirmed,
+                        ))) && (
                       <>
                         <div
                           style={{
@@ -3837,17 +4031,27 @@ zIndex: 50,
                           }}
                         >
                           <ConfirmTextButton
-                            confirmed={Boolean(activeJourney.step7PicksConfirmed)}
+                            confirmed={Boolean(
+                              activeJourney.step7PicksConfirmed,
+                            )}
                             disabled={
                               !(
                                 activeJourney.finalBelief &&
-                                (activeJourney.finalBelief !== BELIEF_WILD_CARD_ID ||
-                                  (activeJourney.customFinalBelief.trim().length > 0 &&
-                                    Boolean(activeJourney.customFinalBeliefConfirmed))) &&
+                                (activeJourney.finalBelief !==
+                                  BELIEF_WILD_CARD_ID ||
+                                  (activeJourney.customFinalBelief.trim()
+                                    .length > 0 &&
+                                    Boolean(
+                                      activeJourney.customFinalBeliefConfirmed,
+                                    ))) &&
                                 activeJourney.finalEmotion &&
-                                (activeJourney.finalEmotion !== EMOTION_WILD_CARD_ID ||
-                                  (activeJourney.customFinalEmotion.trim().length > 0 &&
-                                    Boolean(activeJourney.customFinalEmotionConfirmed)))
+                                (activeJourney.finalEmotion !==
+                                  EMOTION_WILD_CARD_ID ||
+                                  (activeJourney.customFinalEmotion.trim()
+                                    .length > 0 &&
+                                    Boolean(
+                                      activeJourney.customFinalEmotionConfirmed,
+                                    )))
                               )
                             }
                             onConfirm={() =>
@@ -3881,7 +4085,9 @@ zIndex: 50,
                                 ? "#115e59"
                                 : "#52606d",
                               fontWeight: "bold",
-                              opacity: activeJourney.step7PicksConfirmed ? 1 : 0.45,
+                              opacity: activeJourney.step7PicksConfirmed
+                                ? 1
+                                : 0.45,
                               cursor: activeJourney.step7PicksConfirmed
                                 ? "pointer"
                                 : "not-allowed",
@@ -3896,26 +4102,30 @@ zIndex: 50,
                     )}
 
                   {isHost && (
-                  <StatusList
-                    title="Ready to redeclare"
-                    players={joinedPlayers.map((player) => player.player_name)}
-                    done={(index) => {
-                      const journey = multiplayerJourneys[index];
-                      if (!journey) return false;
-                      return Boolean(journey.step7PicksConfirmed);
-                    }}
-                  />
+                    <StatusList
+                      title="Ready to redeclare"
+                      players={joinedPlayers.map(
+                        (player) => player.player_name,
+                      )}
+                      done={(index) => {
+                        const journey = multiplayerJourneys[index];
+                        if (!journey) return false;
+                        return Boolean(journey.step7PicksConfirmed);
+                      }}
+                    />
                   )}
 
                   {isHost && (
-                  <StatusList
-                    title="Step 7 Status"
-                    players={joinedPlayers.map((player) => player.player_name)}
-                    done={(index) => {
-                      const journey = multiplayerJourneys[index];
-                      if (!journey) return false;
-                      return Boolean(
-                        journey.finalBelief &&
+                    <StatusList
+                      title="Step 7 Status"
+                      players={joinedPlayers.map(
+                        (player) => player.player_name,
+                      )}
+                      done={(index) => {
+                        const journey = multiplayerJourneys[index];
+                        if (!journey) return false;
+                        return Boolean(
+                          journey.finalBelief &&
                           (journey.finalBelief !== BELIEF_WILD_CARD_ID ||
                             (journey.customFinalBelief.trim().length > 0 &&
                               Boolean(journey.customFinalBeliefConfirmed))) &&
@@ -3925,9 +4135,9 @@ zIndex: 50,
                               Boolean(journey.customFinalEmotionConfirmed))) &&
                           journey.step7PicksConfirmed &&
                           journey.timelineRedeclared,
-                      );
-                    }}
-                  />
+                        );
+                      }}
+                    />
                   )}
 
                   <div style={{ marginTop: "28px" }}>
@@ -3980,7 +4190,9 @@ zIndex: 50,
                         </button>
                       </>
                     ) : (
-                      renderReadyForHostNotice(isMyCurrentStepComplete(multiplayerStep))
+                      renderReadyForHostNotice(
+                        isMyCurrentStepComplete(multiplayerStep),
+                      )
                     )}
                   </div>
                 </div>
@@ -4011,7 +4223,8 @@ zIndex: 50,
                     }}
                   >
                     <strong>{promptReader}</strong>, read this prompt to the
-                    table: “Review your original response. You may keep your original response or choose a different one.”
+                    table: “Review your original response. You may keep your
+                    original response or choose a different one.”
                   </p>
 
                   <div
@@ -4038,10 +4251,8 @@ zIndex: 50,
                           })
                         }
                         style={cardButtonStyle(
-                          (
-    activeJourney.finalResponse ||
-    activeJourney.response
-  ) === card.id,
+                          (activeJourney.finalResponse ||
+                            activeJourney.response) === card.id,
                         )}
                       >
                         <img
@@ -4067,8 +4278,13 @@ zIndex: 50,
 
                       <textarea
                         placeholder="What response do you choose now?"
-                        value={draftCustomFinalResponse || activeJourney.customFinalResponse}
-                        onChange={(e) => setDraftCustomFinalResponse(e.target.value)}
+                        value={
+                          draftCustomFinalResponse ||
+                          activeJourney.customFinalResponse
+                        }
+                        onChange={(e) =>
+                          setDraftCustomFinalResponse(e.target.value)
+                        }
                         style={{
                           width: "100%",
                           minHeight: "120px",
@@ -4081,11 +4297,20 @@ zIndex: 50,
                         }}
                       />
                       <ConfirmTextButton
-                        confirmed={Boolean(activeJourney.customFinalResponseConfirmed)}
-                        disabled={(draftCustomFinalResponse || activeJourney.customFinalResponse).trim().length === 0}
+                        confirmed={Boolean(
+                          activeJourney.customFinalResponseConfirmed,
+                        )}
+                        disabled={
+                          (
+                            draftCustomFinalResponse ||
+                            activeJourney.customFinalResponse
+                          ).trim().length === 0
+                        }
                         onConfirm={() =>
                           updateActiveJourney({
-                            customFinalResponse: draftCustomFinalResponse || activeJourney.customFinalResponse,
+                            customFinalResponse:
+                              draftCustomFinalResponse ||
+                              activeJourney.customFinalResponse,
                             customFinalResponseConfirmed: true,
                           })
                         }
@@ -4098,7 +4323,9 @@ zIndex: 50,
                   {activeJourney.finalResponse &&
                     (activeJourney.finalResponse !== RESPONSE_WILD_CARD_ID ||
                       (activeJourney.customFinalResponse.trim().length > 0 &&
-                        Boolean(activeJourney.customFinalResponseConfirmed))) && (
+                        Boolean(
+                          activeJourney.customFinalResponseConfirmed,
+                        ))) && (
                       <div
                         style={{
                           marginTop: "32px",
@@ -4160,21 +4387,23 @@ zIndex: 50,
                     )}
 
                   {isHost && (
-                  <StatusList
-                    title="Step 8 Status"
-                    players={joinedPlayers.map((player) => player.player_name)}
-                    done={(index) => {
-                      const journey = multiplayerJourneys[index];
-                      if (!journey) return false;
-                      return Boolean(
-                        journey.finalResponseConfirmed &&
-                        journey.finalResponse &&
+                    <StatusList
+                      title="Step 8 Status"
+                      players={joinedPlayers.map(
+                        (player) => player.player_name,
+                      )}
+                      done={(index) => {
+                        const journey = multiplayerJourneys[index];
+                        if (!journey) return false;
+                        return Boolean(
+                          journey.finalResponseConfirmed &&
+                          journey.finalResponse &&
                           (journey.finalResponse !== RESPONSE_WILD_CARD_ID ||
                             (journey.customFinalResponse.trim().length > 0 &&
                               Boolean(journey.customFinalResponseConfirmed))),
-                      );
-                    }}
-                  />
+                        );
+                      }}
+                    />
                   )}
 
                   <div style={{ marginTop: "28px" }}>
@@ -4208,7 +4437,9 @@ zIndex: 50,
                         </button>
                       </>
                     ) : (
-                      renderReadyForHostNotice(isMyCurrentStepComplete(multiplayerStep))
+                      renderReadyForHostNotice(
+                        isMyCurrentStepComplete(multiplayerStep),
+                      )
                     )}
                   </div>
                 </div>
@@ -4319,7 +4550,9 @@ zIndex: 50,
 
                     <textarea
                       placeholder="What are you noticing now?"
-                      value={draftReflectionText || activeJourney.reflectionText}
+                      value={
+                        draftReflectionText || activeJourney.reflectionText
+                      }
                       onChange={(e) => setDraftReflectionText(e.target.value)}
                       style={{
                         width: "100%",
@@ -4335,10 +4568,15 @@ zIndex: 50,
                     />
                     <ConfirmTextButton
                       confirmed={Boolean(activeJourney.reflectionTextConfirmed)}
-                      disabled={(draftReflectionText || activeJourney.reflectionText).trim().length === 0}
+                      disabled={
+                        (
+                          draftReflectionText || activeJourney.reflectionText
+                        ).trim().length === 0
+                      }
                       onConfirm={() =>
                         updateActiveJourney({
-                          reflectionText: draftReflectionText || activeJourney.reflectionText,
+                          reflectionText:
+                            draftReflectionText || activeJourney.reflectionText,
                           reflectionTextConfirmed: true,
                           reflectionSharedAloud: false,
                         })
@@ -4379,19 +4617,21 @@ zIndex: 50,
                   </div>
 
                   {isHost && (
-                  <StatusList
-                    title="Step 9 Status"
-                    players={joinedPlayers.map((player) => player.player_name)}
-                    done={(index) => {
-                      const journey = multiplayerJourneys[index];
-                      if (!journey) return false;
-                      return Boolean(
-                        (journey.reflectionText.trim().length > 0 &&
-                          Boolean(journey.reflectionTextConfirmed)) ||
+                    <StatusList
+                      title="Step 9 Status"
+                      players={joinedPlayers.map(
+                        (player) => player.player_name,
+                      )}
+                      done={(index) => {
+                        const journey = multiplayerJourneys[index];
+                        if (!journey) return false;
+                        return Boolean(
+                          (journey.reflectionText.trim().length > 0 &&
+                            Boolean(journey.reflectionTextConfirmed)) ||
                           journey.reflectionSharedAloud,
-                      );
-                    }}
-                  />
+                        );
+                      }}
+                    />
                   )}
 
                   <div style={{ marginTop: "28px" }}>
@@ -4437,6 +4677,17 @@ zIndex: 50,
     );
   }
 
+  const singleDisplayedBeliefText =
+    currentStep >= 6 ? finalBeliefText || singleBeliefText : singleBeliefText;
+  const singleDisplayedEmotionText =
+    currentStep >= 6
+      ? finalEmotionText || singleEmotionText
+      : singleEmotionText;
+  const singleDisplayedResponseText =
+    currentStep >= 7
+      ? finalResponseText || singleResponseText
+      : singleResponseText;
+
   return (
     <main style={pageStyle}>
       <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
@@ -4452,10 +4703,7 @@ zIndex: 50,
         >
           <button
             onClick={leaveRoom}
-            style={{
-              ...secondaryButtonStyle,
-              marginBottom: "18px",
-            }}
+            style={{ ...secondaryButtonStyle, marginBottom: "18px" }}
           >
             ← Back to start
           </button>
@@ -4482,8 +4730,7 @@ zIndex: 50,
               letterSpacing: "-0.04em",
             }}
           >
-            An emotion card game for exploring the space between emotion and
-            response
+            Guided Solo Mode
           </h1>
 
           <p
@@ -4529,8 +4776,51 @@ zIndex: 50,
           </div>
         </header>
 
-        <section style={panelStyle}>
+        <section id="step-card" style={panelStyle}>
           {showClosingScreen && renderClosingScreen(false)}
+
+          {!showClosingScreen && !level1Complete && (
+            <div
+              style={{
+                position: "sticky",
+                top: "16px",
+                zIndex: 50,
+                marginTop: "14px",
+                marginBottom: "22px",
+                padding: "18px 20px",
+                borderRadius: "22px",
+                background:
+                  "linear-gradient(135deg, rgba(224,247,250,0.95), rgba(236,253,245,0.92))",
+                border: "2px solid rgba(14,116,144,0.18)",
+                boxShadow: "0 10px 24px rgba(14,116,144,0.10)",
+                fontSize: "15px",
+                lineHeight: 1.7,
+                color: "#164e63",
+                backdropFilter: "blur(8px)",
+              }}
+            >
+              <div
+                style={{
+                  marginBottom: "10px",
+                  fontWeight: "bold",
+                  fontSize: "13px",
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "#0f766e",
+                }}
+              >
+                My Emotion Timeline
+              </div>
+              [ Situation: <strong>{situationText || "Not chosen yet"}</strong>{" "}
+              – Belief:{" "}
+              <strong>{singleDisplayedBeliefText || "Not chosen yet"}</strong> –
+              Emotion:{" "}
+              <strong>{singleDisplayedEmotionText || "Not chosen yet"}</strong>{" "}
+              – Response:{" "}
+              <strong>{singleDisplayedResponseText || "Not chosen yet"}</strong>{" "}
+              ]
+            </div>
+          )}
 
           {!showClosingScreen && level1Complete && (
             <>
@@ -4560,9 +4850,9 @@ zIndex: 50,
                     color: "#52606d",
                   }}
                 >
-                  That is already meaningful work. Level 2 invites you to gently
-                  explore other possible beliefs, not to force yourself to feel
-                  differently, but to notice what else could also be true.
+                  Level 2 invites you to explore other possible beliefs; not to
+                  force yourself to feel differently, but to notice what else
+                  could also be true.
                 </p>
 
                 <div style={{ marginTop: "28px" }}>
@@ -4577,9 +4867,7 @@ zIndex: 50,
                   </button>
 
                   <button
-                    onClick={() => {
-                      setLevel1Complete(false);
-                    }}
+                    onClick={() => setLevel1Complete(false)}
                     style={secondaryButtonStyle}
                   >
                     Stay with Level 1
@@ -4595,8 +4883,13 @@ zIndex: 50,
                 Step 1 — Emotion
               </h2>
 
-              <p style={{ fontSize: "19px", color: "#52606d" }}>
-                What emotion feels most true right now or recently?
+              <p
+                style={{ fontSize: "19px", color: "#52606d", lineHeight: 1.7 }}
+              >
+                Think of a recent situation that affected you emotionally. It
+                may be something everyone here experienced, or something
+                personal to you. What emotion did you feel most strongly in that
+                moment?
               </p>
 
               <CardGrid
@@ -4604,9 +4897,8 @@ zIndex: 50,
                 selectedId={selectedEmotion}
                 onSelect={(id) => {
                   setSelectedEmotion(id);
-                  if (id !== EMOTION_WILD_CARD_ID) {
-                    setCustomEmotion("");
-                  }
+                  setSingleCustomEmotionConfirmed(false);
+                  if (id !== EMOTION_WILD_CARD_ID) setCustomEmotion("");
                 }}
                 cardButtonStyle={cardButtonStyle}
               />
@@ -4625,7 +4917,10 @@ zIndex: 50,
                   <textarea
                     placeholder="What emotion are you feeling?"
                     value={customEmotion}
-                    onChange={(e) => setCustomEmotion(e.target.value)}
+                    onChange={(e) => {
+                      setCustomEmotion(e.target.value);
+                      setSingleCustomEmotionConfirmed(false);
+                    }}
                     style={{
                       width: "100%",
                       minHeight: "100px",
@@ -4636,6 +4931,14 @@ zIndex: 50,
                       resize: "vertical",
                       background: "#fffdf8",
                     }}
+                  />
+
+                  <ConfirmTextButton
+                    confirmed={singleCustomEmotionConfirmed}
+                    disabled={customEmotion.trim().length === 0}
+                    onConfirm={() => setSingleCustomEmotionConfirmed(true)}
+                    label="Confirm this emotion"
+                    confirmedLabel="✓ Emotion confirmed"
                   />
                 </div>
               )}
@@ -4657,7 +4960,9 @@ zIndex: 50,
                 Step 2 — Situation
               </h2>
 
-              <p style={{ fontSize: "19px", color: "#52606d" }}>
+              <p
+                style={{ fontSize: "19px", color: "#52606d", lineHeight: 1.7 }}
+              >
                 Describe what happened using facts only. Imagine reporting what
                 a camera would have recorded.
               </p>
@@ -4673,18 +4978,18 @@ zIndex: 50,
                 }}
               >
                 <p style={{ marginTop: 0, fontWeight: "bold" }}>
-                  Choose how you want to share:
-                </p>
-
-                <p style={{ color: "#52606d", lineHeight: 1.6 }}>
-                  If you are playing in person, you can simply say it aloud. If
-                  you are playing online or want to record it, type it below.
+                  Type one short sentence about what happened. Confirm it, then
+                  share it aloud and click “I shared this aloud”.
                 </p>
 
                 <textarea
-                  placeholder="Optional: type what happened here..."
+                  placeholder="What happened?"
                   value={situationText}
-                  onChange={(e) => setSituationText(e.target.value)}
+                  onChange={(e) => {
+                    setSituationText(e.target.value);
+                    setSingleSituationTextConfirmed(false);
+                    setSituationSharedAloud(false);
+                  }}
                   style={{
                     width: "100%",
                     minHeight: "160px",
@@ -4698,16 +5003,23 @@ zIndex: 50,
                   }}
                 />
 
-                <p
-                  style={{ marginTop: "12px", fontSize: "14px", color: "#777" }}
-                >
-                  You can leave this blank if you shared the situation aloud.
-                </p>
+                <ConfirmTextButton
+                  confirmed={singleSituationTextConfirmed}
+                  disabled={situationText.trim().length === 0}
+                  onConfirm={() => {
+                    setSingleSituationTextConfirmed(true);
+                    setSituationSharedAloud(false);
+                  }}
+                  label="Confirm typed situation"
+                  confirmedLabel="✓ Situation confirmed"
+                />
 
                 <button
-                  onClick={() => setSituationSharedAloud(!situationSharedAloud)}
+                  disabled={!singleSituationTextConfirmed}
+                  onClick={() => setSituationSharedAloud(true)}
                   style={{
-                    marginTop: "16px",
+                    marginTop: "18px",
+                    marginLeft: "12px",
                     padding: "12px 18px",
                     borderRadius: "999px",
                     border: situationSharedAloud
@@ -4716,7 +5028,10 @@ zIndex: 50,
                     background: situationSharedAloud ? "#ccfbf1" : "#fffdf8",
                     color: situationSharedAloud ? "#115e59" : "#52606d",
                     fontWeight: "bold",
-                    cursor: "pointer",
+                    opacity: singleSituationTextConfirmed ? 1 : 0.45,
+                    cursor: singleSituationTextConfirmed
+                      ? "pointer"
+                      : "not-allowed",
                   }}
                 >
                   {situationSharedAloud
@@ -4756,18 +5071,19 @@ zIndex: 50,
                 Step 3 — Belief
               </h2>
 
-              <p style={{ fontSize: "19px", color: "#52606d" }}>
-                What story are you telling yourself about what happened?
+              <p
+                style={{ fontSize: "19px", color: "#52606d", lineHeight: 1.7 }}
+              >
+                What belief might be shaping how you understand what happened?
               </p>
 
               <CardGrid
-  cardsToShow={beliefCards}
- selectedId={selectedBelief}
+                cardsToShow={beliefCards}
+                selectedId={selectedBelief}
                 onSelect={(id) => {
                   setSelectedBelief(id);
-                  if (id !== BELIEF_WILD_CARD_ID) {
-                    setCustomBelief("");
-                  }
+                  setSingleCustomBeliefConfirmed(false);
+                  if (id !== BELIEF_WILD_CARD_ID) setCustomBelief("");
                 }}
                 cardButtonStyle={cardButtonStyle}
               />
@@ -4784,12 +5100,15 @@ zIndex: 50,
                   <h3 style={{ marginTop: 0 }}>Name your own belief</h3>
 
                   <textarea
-                    placeholder="What story are you telling yourself?"
+                    placeholder="What belief might be shaping this?"
                     value={customBelief}
-                    onChange={(e) => setCustomBelief(e.target.value)}
+                    onChange={(e) => {
+                      setCustomBelief(e.target.value);
+                      setSingleCustomBeliefConfirmed(false);
+                    }}
                     style={{
                       width: "100%",
-                      minHeight: "120px",
+                      minHeight: "110px",
                       padding: "18px",
                       borderRadius: "18px",
                       border: "2px solid #d8d2c4",
@@ -4797,6 +5116,14 @@ zIndex: 50,
                       resize: "vertical",
                       background: "#fffdf8",
                     }}
+                  />
+
+                  <ConfirmTextButton
+                    confirmed={singleCustomBeliefConfirmed}
+                    disabled={customBelief.trim().length === 0}
+                    onConfirm={() => setSingleCustomBeliefConfirmed(true)}
+                    label="Confirm this belief"
+                    confirmedLabel="✓ Belief confirmed"
                   />
                 </div>
               )}
@@ -4809,14 +5136,19 @@ zIndex: 50,
                   Back
                 </button>
 
-                {beliefIsComplete && (
-                  <button
-                    onClick={() => setCurrentStep(3)}
-                    style={primaryButtonStyle}
-                  >
-                    Continue
-                  </button>
-                )}
+                <button
+                  onClick={() => {
+                    if (beliefIsComplete) setCurrentStep(3);
+                  }}
+                  disabled={!beliefIsComplete}
+                  style={{
+                    ...primaryButtonStyle,
+                    opacity: beliefIsComplete ? 1 : 0.4,
+                    cursor: beliefIsComplete ? "pointer" : "not-allowed",
+                  }}
+                >
+                  Continue
+                </button>
               </div>
             </>
           )}
@@ -4827,19 +5159,21 @@ zIndex: 50,
                 Step 4 — Declare the Emotion Timeline
               </h2>
 
-              <p style={{ fontSize: "19px", color: "#52606d" }}>
-                Read the emotion timeline aloud.
+              <p
+                style={{ fontSize: "19px", color: "#52606d", lineHeight: 1.7 }}
+              >
+                Take a moment to declare your emotion timeline aloud.
               </p>
 
               <div
                 style={{
-                  marginTop: "28px",
-                  padding: "34px",
+                  marginTop: "32px",
+                  padding: "30px",
                   borderRadius: "28px",
                   background: "#fffdf8",
                   boxShadow: "0 12px 30px rgba(0,0,0,0.08)",
-                  fontSize: "28px",
-                  lineHeight: "1.55",
+                  fontSize: "26px",
+                  lineHeight: 1.5,
                 }}
               >
                 <span style={{ color: "#777" }}>When </span>
@@ -4852,7 +5186,7 @@ zIndex: 50,
               </div>
 
               <button
-                onClick={() => setTimelineDeclared(!timelineDeclared)}
+                onClick={() => setTimelineDeclared(true)}
                 style={{
                   marginTop: "24px",
                   padding: "12px 18px",
@@ -4902,7 +5236,9 @@ zIndex: 50,
                 Step 5 — Response
               </h2>
 
-              <p style={{ fontSize: "19px", color: "#52606d" }}>
+              <p
+                style={{ fontSize: "19px", color: "#52606d", lineHeight: 1.7 }}
+              >
                 What is one response you are willing to try?
               </p>
 
@@ -4911,9 +5247,10 @@ zIndex: 50,
                 selectedId={selectedResponse}
                 onSelect={(id) => {
                   setSelectedResponse(id);
-                  if (id !== RESPONSE_WILD_CARD_ID) {
-                    setCustomResponse("");
-                  }
+                  setSingleCustomResponseConfirmed(false);
+                  setSingleResponseReadyToShare(false);
+                  setResponseSharedAloud(false);
+                  if (id !== RESPONSE_WILD_CARD_ID) setCustomResponse("");
                 }}
                 cardButtonStyle={cardButtonStyle}
               />
@@ -4933,7 +5270,12 @@ zIndex: 50,
                   <textarea
                     placeholder="What response are you willing to try?"
                     value={customResponse}
-                    onChange={(e) => setCustomResponse(e.target.value)}
+                    onChange={(e) => {
+                      setCustomResponse(e.target.value);
+                      setSingleCustomResponseConfirmed(false);
+                      setSingleResponseReadyToShare(false);
+                      setResponseSharedAloud(false);
+                    }}
                     style={{
                       width: "100%",
                       minHeight: "120px",
@@ -4944,6 +5286,14 @@ zIndex: 50,
                       resize: "vertical",
                       background: "#fffdf8",
                     }}
+                  />
+
+                  <ConfirmTextButton
+                    confirmed={singleCustomResponseConfirmed}
+                    disabled={customResponse.trim().length === 0}
+                    onConfirm={() => setSingleCustomResponseConfirmed(true)}
+                    label="Confirm this response"
+                    confirmedLabel="✓ Response confirmed"
                   />
                 </div>
               )}
@@ -4989,7 +5339,12 @@ zIndex: 50,
                     <textarea
                       placeholder="Optional: What draws you to this response?"
                       value={responseReflection}
-                      onChange={(e) => setResponseReflection(e.target.value)}
+                      onChange={(e) => {
+                        setResponseReflection(e.target.value);
+                        setSingleResponseReflectionConfirmed(false);
+                        setSingleResponseReadyToShare(false);
+                        setResponseSharedAloud(false);
+                      }}
                       style={{
                         width: "100%",
                         minHeight: "140px",
@@ -5003,27 +5358,72 @@ zIndex: 50,
                       }}
                     />
 
-                    <button
-                      onClick={() =>
-                        setResponseSharedAloud(!responseSharedAloud)
-                      }
+                    <ConfirmTextButton
+                      confirmed={singleResponseReflectionConfirmed}
+                      disabled={responseReflection.trim().length === 0}
+                      onConfirm={() => {
+                        setSingleResponseReflectionConfirmed(true);
+                        setSingleResponseReadyToShare(false);
+                        setResponseSharedAloud(false);
+                      }}
+                      label="Confirm typed reflection"
+                      confirmedLabel="✓ Reflection confirmed"
+                    />
+
+                    <div
                       style={{
-                        marginTop: "18px",
-                        padding: "12px 18px",
-                        borderRadius: "999px",
-                        border: responseSharedAloud
-                          ? "2px solid #0f766e"
-                          : "2px solid #d8d2c4",
-                        background: responseSharedAloud ? "#ccfbf1" : "#fffdf8",
-                        color: responseSharedAloud ? "#115e59" : "#52606d",
-                        fontWeight: "bold",
-                        cursor: "pointer",
+                        position: "sticky",
+                        bottom: "16px",
+                        zIndex: 70,
+                        marginTop: "24px",
+                        padding: "14px",
+                        borderRadius: "20px",
+                        background: "rgba(255,253,248,0.94)",
+                        backdropFilter: "blur(10px)",
+                        boxShadow: "0 -8px 20px rgba(0,0,0,0.08)",
                       }}
                     >
-                      {responseSharedAloud
-                        ? "✓ Shared aloud"
-                        : "I shared this aloud"}
-                    </button>
+                      <ConfirmTextButton
+                        confirmed={singleResponseReadyToShare}
+                        disabled={
+                          !(
+                            responseCardIsComplete &&
+                            (responseReflection.trim().length === 0 ||
+                              singleResponseReflectionConfirmed)
+                          )
+                        }
+                        onConfirm={() => setSingleResponseReadyToShare(true)}
+                        label="Confirm response — ready to share in circle"
+                        confirmedLabel="✓ Ready to share in circle"
+                      />
+
+                      <button
+                        disabled={!singleResponseReadyToShare}
+                        onClick={() => setResponseSharedAloud(true)}
+                        style={{
+                          marginTop: "12px",
+                          marginLeft: "12px",
+                          padding: "12px 18px",
+                          borderRadius: "999px",
+                          border: responseSharedAloud
+                            ? "2px solid #0f766e"
+                            : "2px solid #d8d2c4",
+                          background: responseSharedAloud
+                            ? "#ccfbf1"
+                            : "#fffdf8",
+                          color: responseSharedAloud ? "#115e59" : "#52606d",
+                          fontWeight: "bold",
+                          opacity: singleResponseReadyToShare ? 1 : 0.45,
+                          cursor: singleResponseReadyToShare
+                            ? "pointer"
+                            : "not-allowed",
+                        }}
+                      >
+                        {responseSharedAloud
+                          ? "✓ Shared aloud"
+                          : "I shared this aloud"}
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -5054,9 +5454,11 @@ zIndex: 50,
                 Step 6 — Alternative Beliefs
               </h2>
 
-              <p style={{ fontSize: "19px", color: "#52606d" }}>
-                Pick up to two alternative beliefs that could also explain the
-                situation. These are not advice. They are possible lenses.
+              <p
+                style={{ fontSize: "19px", color: "#52606d", lineHeight: 1.7 }}
+              >
+                This round, choose alternative beliefs that could also be true.
+                Simply offer a possible belief; no need to explain or convince.
               </p>
 
               <CardGrid
@@ -5088,12 +5490,24 @@ zIndex: 50,
                   <button
                     onClick={() => {
                       setFinalBelief(selectedBelief);
+                      setCustomFinalBelief(
+                        selectedBelief === BELIEF_WILD_CARD_ID
+                          ? customBelief
+                          : "",
+                      );
                       setFinalEmotion(selectedEmotion);
                       setCustomFinalEmotion(
                         selectedEmotion === EMOTION_WILD_CARD_ID
                           ? customEmotion
                           : "",
                       );
+                      setSingleCustomFinalBeliefConfirmed(
+                        selectedBelief === BELIEF_WILD_CARD_ID,
+                      );
+                      setSingleCustomFinalEmotionConfirmed(
+                        selectedEmotion === EMOTION_WILD_CARD_ID,
+                      );
+                      setSingleStep7PicksConfirmed(false);
                       setTimelineRedeclared(false);
                       setCurrentStep(6);
                     }}
@@ -5112,10 +5526,13 @@ zIndex: 50,
                 Step 7 — Meaning-Making
               </h2>
 
-              <p style={{ fontSize: "19px", color: "#52606d" }}>
-                You may keep your original belief, change it, or choose one of
-                the alternative beliefs. Notice which belief feels most true,
-                and which one feels most helpful.
+              <p
+                style={{ fontSize: "19px", color: "#52606d", lineHeight: 1.7 }}
+              >
+                Read the beliefs; your own and the ones offered to you. Choose
+                the belief that feels most useful to you. Then notice whether
+                your emotion stays the same or changes, and pick the emotion
+                that feels most true now.
               </p>
 
               <div
@@ -5128,26 +5545,49 @@ zIndex: 50,
               >
                 {[selectedBelief, ...alternativeBeliefs]
                   .filter(Boolean)
-                  .map((beliefId) => {
+                  .map((beliefId, index) => {
                     const card = beliefCards.find(
                       (belief) => belief.id === beliefId,
                     );
-
                     if (!card) return null;
+                    const isOriginal = index === 0;
 
                     return (
                       <button
-                        key={card.id}
-                        onClick={() => setFinalBelief(card.id)}
+                        key={`${card.id}-${index}`}
+                        onClick={() => {
+                          setFinalBelief(card.id);
+                          setCustomFinalBelief(
+                            card.id === BELIEF_WILD_CARD_ID ? customBelief : "",
+                          );
+                          setSingleCustomFinalBeliefConfirmed(
+                            card.id !== BELIEF_WILD_CARD_ID,
+                          );
+                          setSingleStep7PicksConfirmed(false);
+                          setTimelineRedeclared(false);
+                        }}
                         style={cardButtonStyle(finalBelief === card.id)}
                       >
+                        <div
+                          style={{
+                            padding: "10px",
+                            fontSize: "13px",
+                            fontWeight: "bold",
+                            color: "#52606d",
+                            background: "#fffdf8",
+                            textAlign: "left",
+                          }}
+                        >
+                          {isOriginal
+                            ? "Original belief"
+                            : `Alternative belief ${index}`}
+                        </div>
                         <img
                           src={card.image}
                           alt={card.title}
                           style={{ width: "100%", display: "block" }}
                         />
-
-                        {card.id === "belief_wild_card" &&
+                        {card.id === BELIEF_WILD_CARD_ID &&
                           customBelief.trim().length > 0 && (
                             <div
                               style={{
@@ -5155,13 +5595,11 @@ zIndex: 50,
                                 fontSize: "15px",
                                 lineHeight: 1.4,
                                 fontWeight: "bold",
-                                color: "#115e59",
-                                background: "#ccfbf1",
-                                textAlign: "left",
+                                color: "#334155",
+                                background: "#fffdf8",
                               }}
                             >
-                              <strong>You wrote:</strong>
-                              <br />“{customBelief}”
+                              {customBelief}
                             </div>
                           )}
                       </button>
@@ -5169,60 +5607,119 @@ zIndex: 50,
                   })}
               </div>
 
-              {finalBelief && (
-                <>
-                  <h3 style={{ marginTop: "36px", fontSize: "24px" }}>
-                    What emotion feels true now?
-                  </h3>
-
-                  <p style={{ fontSize: "17px", color: "#52606d" }}>
-                    The emotion may change, soften, intensify, or stay the same.
-                  </p>
-
-                  <CardGrid
-                    cardsToShow={emotionCards}
-                    selectedId={finalEmotion}
-                    onSelect={(id) => {
-                      setFinalEmotion(id);
-                      if (id !== EMOTION_WILD_CARD_ID) {
-                        setCustomFinalEmotion("");
-                      }
+              {finalBelief === BELIEF_WILD_CARD_ID && (
+                <div
+                  style={{
+                    marginTop: "28px",
+                    padding: "24px",
+                    borderRadius: "24px",
+                    background: "rgba(255,255,255,0.72)",
+                    maxWidth: "760px",
+                  }}
+                >
+                  <h3 style={{ marginTop: 0 }}>Refine your chosen belief</h3>
+                  <textarea
+                    placeholder="What belief feels most useful now?"
+                    value={customFinalBelief}
+                    onChange={(e) => {
+                      setCustomFinalBelief(e.target.value);
+                      setSingleCustomFinalBeliefConfirmed(false);
+                      setSingleStep7PicksConfirmed(false);
+                      setTimelineRedeclared(false);
                     }}
-                    cardButtonStyle={cardButtonStyle}
+                    style={{
+                      width: "100%",
+                      minHeight: "110px",
+                      padding: "18px",
+                      borderRadius: "18px",
+                      border: "2px solid #d8d2c4",
+                      fontSize: "17px",
+                      resize: "vertical",
+                      background: "#fffdf8",
+                    }}
                   />
-
-                  {finalEmotion === EMOTION_WILD_CARD_ID && (
-                    <div
-                      style={{
-                        marginTop: "28px",
-                        padding: "24px",
-                        borderRadius: "24px",
-                        background: "rgba(255,255,255,0.72)",
-                      }}
-                    >
-                      <h3 style={{ marginTop: 0 }}>
-                        Name your current emotion
-                      </h3>
-
-                      <textarea
-                        placeholder="What emotion feels true now?"
-                        value={customFinalEmotion}
-                        onChange={(e) => setCustomFinalEmotion(e.target.value)}
-                        style={{
-                          width: "100%",
-                          minHeight: "100px",
-                          padding: "18px",
-                          borderRadius: "18px",
-                          border: "2px solid #d8d2c4",
-                          fontSize: "17px",
-                          resize: "vertical",
-                          background: "#fffdf8",
-                        }}
-                      />
-                    </div>
-                  )}
-                </>
+                  <ConfirmTextButton
+                    confirmed={singleCustomFinalBeliefConfirmed}
+                    disabled={customFinalBelief.trim().length === 0}
+                    onConfirm={() => setSingleCustomFinalBeliefConfirmed(true)}
+                    label="Confirm this belief"
+                    confirmedLabel="✓ Belief confirmed"
+                  />
+                </div>
               )}
+
+              {finalBelief &&
+                (finalBelief !== BELIEF_WILD_CARD_ID ||
+                  singleCustomFinalBeliefConfirmed) && (
+                  <>
+                    <h3 style={{ marginTop: "44px", fontSize: "24px" }}>
+                      What emotion feels most true now?
+                    </h3>
+
+                    <p style={{ fontSize: "17px", color: "#52606d" }}>
+                      The emotion may change, soften, intensify, or stay the
+                      same.
+                    </p>
+
+                    <CardGrid
+                      cardsToShow={emotionCards}
+                      selectedId={finalEmotion}
+                      onSelect={(id) => {
+                        setFinalEmotion(id);
+                        setSingleCustomFinalEmotionConfirmed(false);
+                        setSingleStep7PicksConfirmed(false);
+                        setTimelineRedeclared(false);
+                        if (id !== EMOTION_WILD_CARD_ID)
+                          setCustomFinalEmotion("");
+                      }}
+                      cardButtonStyle={cardButtonStyle}
+                    />
+
+                    {finalEmotion === EMOTION_WILD_CARD_ID && (
+                      <div
+                        style={{
+                          marginTop: "28px",
+                          padding: "24px",
+                          borderRadius: "24px",
+                          background: "rgba(255,255,255,0.72)",
+                        }}
+                      >
+                        <h3 style={{ marginTop: 0 }}>
+                          Name your current emotion
+                        </h3>
+                        <textarea
+                          placeholder="What emotion feels true now?"
+                          value={customFinalEmotion}
+                          onChange={(e) => {
+                            setCustomFinalEmotion(e.target.value);
+                            setSingleCustomFinalEmotionConfirmed(false);
+                            setSingleStep7PicksConfirmed(false);
+                            setTimelineRedeclared(false);
+                          }}
+                          style={{
+                            width: "100%",
+                            minHeight: "100px",
+                            padding: "18px",
+                            borderRadius: "18px",
+                            border: "2px solid #d8d2c4",
+                            fontSize: "17px",
+                            resize: "vertical",
+                            background: "#fffdf8",
+                          }}
+                        />
+                        <ConfirmTextButton
+                          confirmed={singleCustomFinalEmotionConfirmed}
+                          disabled={customFinalEmotion.trim().length === 0}
+                          onConfirm={() =>
+                            setSingleCustomFinalEmotionConfirmed(true)
+                          }
+                          label="Confirm this emotion"
+                          confirmedLabel="✓ Emotion confirmed"
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
 
               {finalBelief && finalEmotionIsComplete && (
                 <>
@@ -5248,25 +5745,59 @@ zIndex: 50,
                     <span>.</span>
                   </div>
 
-                  <button
-                    onClick={() => setTimelineRedeclared(!timelineRedeclared)}
+                  <div
                     style={{
+                      position: "sticky",
+                      bottom: "16px",
+                      zIndex: 70,
                       marginTop: "24px",
-                      padding: "12px 18px",
-                      borderRadius: "999px",
-                      border: timelineRedeclared
-                        ? "2px solid #0f766e"
-                        : "2px solid #d8d2c4",
-                      background: timelineRedeclared ? "#ccfbf1" : "#fffdf8",
-                      color: timelineRedeclared ? "#115e59" : "#52606d",
-                      fontWeight: "bold",
-                      cursor: "pointer",
+                      padding: "14px",
+                      borderRadius: "20px",
+                      background: "rgba(255,253,248,0.94)",
+                      backdropFilter: "blur(10px)",
+                      boxShadow: "0 -8px 20px rgba(0,0,0,0.08)",
                     }}
                   >
-                    {timelineRedeclared
-                      ? "✓ Emotion timeline redeclared"
-                      : "I have redeclared this aloud"}
-                  </button>
+                    <ConfirmTextButton
+                      confirmed={singleStep7PicksConfirmed}
+                      disabled={
+                        !(
+                          finalBelief &&
+                          (finalBelief !== BELIEF_WILD_CARD_ID ||
+                            singleCustomFinalBeliefConfirmed) &&
+                          finalEmotionIsComplete
+                        )
+                      }
+                      onConfirm={() => setSingleStep7PicksConfirmed(true)}
+                      label="Confirm picks — ready to redeclare aloud"
+                      confirmedLabel="✓ Picks confirmed — ready to redeclare"
+                    />
+
+                    <button
+                      disabled={!singleStep7PicksConfirmed}
+                      onClick={() => setTimelineRedeclared(true)}
+                      style={{
+                        marginTop: "12px",
+                        marginLeft: "12px",
+                        padding: "12px 18px",
+                        borderRadius: "999px",
+                        border: timelineRedeclared
+                          ? "2px solid #0f766e"
+                          : "2px solid #d8d2c4",
+                        background: timelineRedeclared ? "#ccfbf1" : "#fffdf8",
+                        color: timelineRedeclared ? "#115e59" : "#52606d",
+                        fontWeight: "bold",
+                        opacity: singleStep7PicksConfirmed ? 1 : 0.45,
+                        cursor: singleStep7PicksConfirmed
+                          ? "pointer"
+                          : "not-allowed",
+                      }}
+                    >
+                      {timelineRedeclared
+                        ? "✓ Emotion timeline redeclared"
+                        : "I have redeclared this aloud"}
+                    </button>
+                  </div>
                 </>
               )}
 
@@ -5280,6 +5811,7 @@ zIndex: 50,
 
                 {finalBelief &&
                   finalEmotionIsComplete &&
+                  singleStep7PicksConfirmed &&
                   timelineRedeclared && (
                     <button
                       onClick={() => {
@@ -5288,6 +5820,10 @@ zIndex: 50,
                           selectedResponse === RESPONSE_WILD_CARD_ID
                             ? customResponse
                             : "",
+                        );
+                        setSingleFinalResponseConfirmed(false);
+                        setSingleCustomFinalResponseConfirmed(
+                          selectedResponse !== RESPONSE_WILD_CARD_ID,
                         );
                         setCurrentStep(7);
                       }}
@@ -5306,9 +5842,11 @@ zIndex: 50,
                 Step 8 — Final Response
               </h2>
 
-              <p style={{ fontSize: "19px", color: "#52606d" }}>
-                After considering other beliefs, do you want to keep your
-                response or choose a new one?
+              <p
+                style={{ fontSize: "19px", color: "#52606d", lineHeight: 1.7 }}
+              >
+                Review your original response. You may keep your original
+                response or choose a different one.
               </p>
 
               <CardGrid
@@ -5316,9 +5854,9 @@ zIndex: 50,
                 selectedId={finalResponse}
                 onSelect={(id) => {
                   setFinalResponse(id);
-                  if (id !== RESPONSE_WILD_CARD_ID) {
-                    setCustomFinalResponse("");
-                  }
+                  setSingleFinalResponseConfirmed(false);
+                  setSingleCustomFinalResponseConfirmed(false);
+                  if (id !== RESPONSE_WILD_CARD_ID) setCustomFinalResponse("");
                 }}
                 cardButtonStyle={cardButtonStyle}
               />
@@ -5338,7 +5876,11 @@ zIndex: 50,
                   <textarea
                     placeholder="What response do you choose now?"
                     value={customFinalResponse}
-                    onChange={(e) => setCustomFinalResponse(e.target.value)}
+                    onChange={(e) => {
+                      setCustomFinalResponse(e.target.value);
+                      setSingleCustomFinalResponseConfirmed(false);
+                      setSingleFinalResponseConfirmed(false);
+                    }}
                     style={{
                       width: "100%",
                       minHeight: "120px",
@@ -5350,41 +5892,59 @@ zIndex: 50,
                       background: "#fffdf8",
                     }}
                   />
+
+                  <ConfirmTextButton
+                    confirmed={singleCustomFinalResponseConfirmed}
+                    disabled={customFinalResponse.trim().length === 0}
+                    onConfirm={() =>
+                      setSingleCustomFinalResponseConfirmed(true)
+                    }
+                    label="Confirm this response"
+                    confirmedLabel="✓ Response confirmed"
+                  />
                 </div>
               )}
 
-              {finalResponseIsComplete && (
-                <div
-                  style={{
-                    marginTop: "32px",
-                    padding: "32px",
-                    borderRadius: "28px",
-                    background: "#fffdf8",
-                    boxShadow: "0 12px 30px rgba(0,0,0,0.08)",
-                  }}
-                >
-                  <p
+              {finalResponse &&
+                (finalResponse !== RESPONSE_WILD_CARD_ID ||
+                  singleCustomFinalResponseConfirmed) && (
+                  <div
                     style={{
-                      marginTop: 0,
-                      fontSize: "18px",
-                      color: "#52606d",
+                      marginTop: "32px",
+                      padding: "32px",
+                      borderRadius: "28px",
+                      background: "#fffdf8",
+                      boxShadow: "0 12px 30px rgba(0,0,0,0.08)",
                     }}
                   >
-                    Final response:
-                  </p>
-
-                  <p
-                    style={{
-                      fontSize: "34px",
-                      fontWeight: "bold",
-                      lineHeight: 1.4,
-                      marginBottom: 0,
-                    }}
-                  >
-                    {finalResponseText}
-                  </p>
-                </div>
-              )}
+                    <p
+                      style={{
+                        marginTop: 0,
+                        fontSize: "18px",
+                        color: "#52606d",
+                      }}
+                    >
+                      Final response:
+                    </p>
+                    <p
+                      style={{
+                        fontSize: "34px",
+                        fontWeight: "bold",
+                        lineHeight: 1.4,
+                        marginBottom: 0,
+                      }}
+                    >
+                      {finalResponseText}
+                    </p>
+                    <ConfirmTextButton
+                      confirmed={singleFinalResponseConfirmed}
+                      disabled={false}
+                      onConfirm={() => setSingleFinalResponseConfirmed(true)}
+                      label="Confirm final response"
+                      confirmedLabel="✓ Final response confirmed"
+                    />
+                  </div>
+                )}
 
               <div style={{ marginTop: "32px" }}>
                 <button
@@ -5412,9 +5972,11 @@ zIndex: 50,
                 Step 9 — Reflection
               </h2>
 
-              <p style={{ fontSize: "19px", color: "#52606d" }}>
-                Take a moment to notice what shifted, what stayed, and what
-                opened up.
+              <p
+                style={{ fontSize: "19px", color: "#52606d", lineHeight: 1.7 }}
+              >
+                Take a moment to reflect on what shifted, what stayed, and what
+                you want to remember.
               </p>
 
               <div
@@ -5427,9 +5989,9 @@ zIndex: 50,
               >
                 {[
                   "What did you notice about your beliefs?",
-                  "Which belief felt most true, and which belief felt most helpful?",
-                  "What was it like receiving or considering alternative beliefs?",
-                  "What opened up for you that was not there before?",
+                  "Did your emotion stay the same or change?",
+                  "What was it like considering alternative beliefs?",
+                  "What do you want to remember from this process?",
                 ].map((question) => (
                   <div
                     key={question}
@@ -5499,7 +6061,11 @@ zIndex: 50,
                 <textarea
                   placeholder="What are you noticing now?"
                   value={reflectionText}
-                  onChange={(e) => setReflectionText(e.target.value)}
+                  onChange={(e) => {
+                    setReflectionText(e.target.value);
+                    setSingleReflectionTextConfirmed(false);
+                    setReflectionSharedAloud(false);
+                  }}
                   style={{
                     width: "100%",
                     minHeight: "180px",
@@ -5513,12 +6079,19 @@ zIndex: 50,
                   }}
                 />
 
+                <ConfirmTextButton
+                  confirmed={singleReflectionTextConfirmed}
+                  disabled={reflectionText.trim().length === 0}
+                  onConfirm={() => setSingleReflectionTextConfirmed(true)}
+                  label="Confirm typed reflection"
+                  confirmedLabel="✓ Reflection confirmed"
+                />
+
                 <button
-                  onClick={() =>
-                    setReflectionSharedAloud(!reflectionSharedAloud)
-                  }
+                  onClick={() => setReflectionSharedAloud(true)}
                   style={{
                     marginTop: "18px",
+                    marginLeft: "12px",
                     padding: "12px 18px",
                     borderRadius: "999px",
                     border: reflectionSharedAloud
