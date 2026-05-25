@@ -909,7 +909,7 @@ useEffect(() => {
                 letterSpacing: "-0.03em",
               }}
             >
-              An interactive card game for exploring the space between emotion
+              An interactive experience for exploring the space between emotion
               and response
             </h1>
 
@@ -935,7 +935,7 @@ useEffect(() => {
                 color: "#52606d",
               }}
             >
-              This game is not about fixing feelings. It is about SLOWING DOWN
+              The process in this experience is not about fixing feelings. It is about SLOWING DOWN
               enough to notice what is happening inside us, and what becomes
               possible when we expand the space between stimulus and response.
             </p>
@@ -1269,7 +1269,7 @@ useEffect(() => {
             </p>
 
               <p style={{ marginBottom: "28px" }}>
-              Big thanks to my beta testers for making this game usable;
+              Big thanks to my beta testers for making this app usable;
               <br />
               Laureen, Elise, Mei Teng, Elizabeth, Atassha and Elsa!
             </p>
@@ -1894,7 +1894,7 @@ const receiverResponseText =
               cursor: "default",
             }}
           >
-            Ready for host to move the game forward
+            Ready for host to move the process forward
           </button>
         );
       }
@@ -4420,12 +4420,12 @@ zIndex: 50,
                               : "not-allowed",
                           }}
                         >
-                          Complete the game
+                          Complete the journey
                         </button>
                       </>
                     ) : (
                       <p style={{ color: "#191c1f", fontSize: "16px" }}>
-                        Waiting for the host to complete the game.
+                        Waiting for the host to complete the journey.
                       </p>
                     )}
                   </div>
@@ -4482,7 +4482,7 @@ zIndex: 50,
               letterSpacing: "-0.04em",
             }}
           >
-            An emotion card game for exploring the space between emotion and
+            A reflective experience for exploring the space between emotion and
             response
           </h1>
 
