@@ -922,7 +922,7 @@ useEffect(() => {
                 color: "#52606d",
               }}
             >
-              Think of a situation, coose an emotion, describe what happened, notice the belief or story
+              Think of a situation, choose an emotion, describe what happened, notice the belief or story
               you are carrying, and choose a response with awareness.
             </p>
 
@@ -1265,7 +1265,7 @@ useEffect(() => {
               and colleagues from the Organisational Development and Psychology
               Branch:
               <br />
-              Phyllis, Cara, and Hui Qin
+              Phyllis, Cara, and Hui Qun
             </p>
 
               <p style={{ marginBottom: "28px" }}>
@@ -2683,7 +2683,7 @@ zIndex: 50,
                     </strong>
                     <span style={{ color: "#777" }}> , I told myself </span>
                     <strong>{activeBeliefText}</strong>
-                    <span style={{ color: "#777" }}> , so I felt </span>
+                    <span style={{ color: "#777" }}> , and I felt </span>
                     <strong>{activeEmotionText}</strong>
                     <span>.</span>
                   </div>
@@ -4846,7 +4846,7 @@ zIndex: 50,
                 <strong>{situationText || "[the situation happened]"}</strong>
                 <span style={{ color: "#777" }}> , I told myself </span>
                 <strong>{singleBeliefText}</strong>
-                <span style={{ color: "#777" }}> , so I felt </span>
+                <span style={{ color: "#777" }}> , and I felt </span>
                 <strong>{singleEmotionText}</strong>
                 <span>.</span>
               </div>
