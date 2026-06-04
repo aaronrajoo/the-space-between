@@ -2172,14 +2172,80 @@ useEffect(() => {
                 boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
               }}
             >
-              <h3 style={{ marginTop: 0 }}>Custom text for later AI theme analysis</h3>
+              <h3 style={{ marginTop: 0 }}>
+  Download anonymised data for AI analysis
+</h3>
 
-              <p style={{ color: "#52606d", lineHeight: 1.7 }}>
-                This section collects typed responses across the class. Later,
-                this can be sent to an AI summariser to identify recurring
-                themes. For now, it is displayed as anonymised raw text.
-              </p>
+<p style={{ color: "#52606d", lineHeight: 1.7 }}>
+  Download anonymised class data and paste it into your preferred AI
+  tool (ChatGPT, Claude, Gemini, etc.) to generate themes, insights,
+  discussion questions, or follow-up prompts.
+</p>
+<button
+  onClick={() => {
+    const exportText = `
+SESSION
+-------
+${classSession?.session_title ?? ""}
+${classSession?.topic ? `Topic: ${classSession.topic}` : ""}
 
+SUMMARY
+-------
+Rooms: ${classRoomSummaries.length}
+Players: ${classRoomSummaries.reduce(
+      (total, room) => total + room.players.length,
+      0,
+    )}
+
+COMMON EMOTIONS
+---------------
+${emotionCounts
+  .map((item) => `${item.label}: ${item.count}`)
+  .join("\n")}
+
+COMMON ORIGINAL BELIEFS
+-----------------------
+${beliefCounts
+  .map((item) => `${item.label}: ${item.count}`)
+  .join("\n")}
+
+COMMON FINAL BELIEFS
+--------------------
+${finalBeliefCounts
+  .map((item) => `${item.label}: ${item.count}`)
+  .join("\n")}
+
+COMMON RESPONSES
+----------------
+${responseCounts
+  .map((item) => `${item.label}: ${item.count}`)
+  .join("\n")}
+
+ANONYMISED TEXT RESPONSES
+-------------------------
+${customTexts.map((text) => `• ${text}`).join("\n")}
+`;
+
+    const blob = new Blob([exportText], {
+      type: "text/plain;charset=utf-8",
+    });
+
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${classCode}-AI-analysis.txt`;
+    link.click();
+
+    URL.revokeObjectURL(url);
+  }}
+  style={{
+    ...primaryButtonStyle,
+    marginBottom: "20px",
+  }}
+>
+  Download Data for AI Analysis
+</button>
               {customTexts.length === 0 ? (
                 <p style={{ color: "#52606d" }}>No typed responses yet.</p>
               ) : (
