@@ -71,6 +71,22 @@ type SavedPlayerSession = {
   playerName: string;
   isHost: boolean;
 };
+
+type ClassSession = {
+  class_code: string;
+  facilitator_code: string;
+  facilitator_name: string | null;
+  session_title: string | null;
+  topic: string | null;
+  created_at?: string;
+};
+
+type ClassRoomSummary = {
+  room_code: string;
+  players: RoomPlayer[];
+  journeys: PlayerJourney[];
+  beliefOffers: BeliefOffer[];
+};
 function createEmptyJourney(): PlayerJourney {
   return {
     emotion: null,
@@ -117,7 +133,7 @@ function clearPlayerSession() {
 }
 export default function Home() {
   const [mode, setMode] = useState<
-  "home" | "single" | "free" | "multiLobby" | "multi"
+  "home" | "single" | "free" | "multiLobby" | "multi" | "classHome" | "classDashboard" | "classGroupStart"
 >(
     "home",
   );
@@ -165,6 +181,20 @@ export default function Home() {
   const [joinedPlayers, setJoinedPlayers] = useState<RoomPlayer[]>([]);
   const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
   const [isHost, setIsHost] = useState(false);
+
+  // Class/session mode state
+  const [classCode, setClassCode] = useState("");
+  const [facilitatorCode, setFacilitatorCode] = useState("");
+  const [facilitatorName, setFacilitatorName] = useState("");
+  const [classSessionTitle, setClassSessionTitle] = useState("");
+  const [classTopic, setClassTopic] = useState("");
+  const [classJoinCode, setClassJoinCode] = useState("");
+  const [classJoinError, setClassJoinError] = useState("");
+  const [classSession, setClassSession] = useState<ClassSession | null>(null);
+  const [classRoomSummaries, setClassRoomSummaries] = useState<ClassRoomSummary[]>([]);
+  const [classDashboardLoading, setClassDashboardLoading] = useState(false);
+  const [classDashboardError, setClassDashboardError] = useState("");
+
   const emotionCards = cards.filter((card) => card.type === "emotion");
   const beliefCards = cards.filter((card) => card.type === "belief");
   const responseCards = cards.filter((card) => card.type === "response");
@@ -250,6 +280,150 @@ const [draftCustomBeliefOffer, setDraftCustomBeliefOffer] = useState("");
     responseCardIsComplete &&
     (responseReflection.trim().length > 0 || responseSharedAloud);
 
+
+  function generateShortCode(length = 6) {
+    const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let code = "";
+
+    for (let i = 0; i < length; i++) {
+      code += alphabet[Math.floor(Math.random() * alphabet.length)];
+    }
+
+    return code;
+  }
+
+  async function loadClassDashboard(code: string, adminCode: string) {
+    const cleanedClassCode = code.trim().toUpperCase();
+    const cleanedFacilitatorCode = adminCode.trim().toUpperCase();
+
+    if (!cleanedClassCode || !cleanedFacilitatorCode) {
+      setClassDashboardError("Please enter both the class code and facilitator code.");
+      return;
+    }
+
+    setClassDashboardLoading(true);
+    setClassDashboardError("");
+
+    const { data: sessionData, error: sessionError } = await supabase
+      .from("class_sessions")
+      .select("*")
+      .eq("class_code", cleanedClassCode)
+      .eq("facilitator_code", cleanedFacilitatorCode)
+      .single();
+
+    if (sessionError || !sessionData) {
+      setClassDashboardLoading(false);
+      setClassDashboardError("Class session not found. Check both codes and try again.");
+      return;
+    }
+
+    setClassSession(sessionData as ClassSession);
+    setClassCode(cleanedClassCode);
+    setFacilitatorCode(cleanedFacilitatorCode);
+
+    const { data: roomsData, error: roomsError } = await supabase
+      .from("rooms")
+      .select("room_code")
+      .eq("class_code", cleanedClassCode)
+      .order("created_at", { ascending: true });
+
+    if (roomsError) {
+      setClassDashboardLoading(false);
+      setClassDashboardError("Could not load the class rooms.");
+      return;
+    }
+
+    const roomCodes = (roomsData ?? []).map((room) => room.room_code);
+
+    if (roomCodes.length === 0) {
+      setClassRoomSummaries([]);
+      setClassDashboardLoading(false);
+      setMode("classDashboard");
+      return;
+    }
+
+    const { data: playersData } = await supabase
+      .from("players")
+      .select("room_code, id, player_name")
+      .in("room_code", roomCodes)
+      .order("created_at", { ascending: true });
+
+    const { data: journeysData } = await supabase
+      .from("player_journeys")
+      .select("room_code, player_id, journey")
+      .in("room_code", roomCodes);
+
+    const { data: offersData } = await supabase
+      .from("belief_offers")
+      .select("room_code, receiver_index, giver_index, belief_id, custom_belief")
+      .in("room_code", roomCodes);
+
+    const summaries: ClassRoomSummary[] = roomCodes.map((code) => {
+      const roomPlayers = (playersData ?? [])
+        .filter((player) => player.room_code === code)
+        .map((player) => ({
+          id: player.id,
+          player_name: player.player_name,
+        }));
+
+      const roomJourneys = roomPlayers.map((player) => {
+        const existing = (journeysData ?? []).find(
+          (row) => row.room_code === code && row.player_id === player.id,
+        );
+
+        return existing?.journey ?? createEmptyJourney();
+      });
+
+      const roomOffers = (offersData ?? [])
+        .filter((offer) => offer.room_code === code)
+        .map((offer) => ({
+          receiverIndex: offer.receiver_index,
+          giverIndex: offer.giver_index,
+          beliefId: offer.belief_id,
+          customBelief: offer.custom_belief ?? "",
+        }));
+
+      return {
+        room_code: code,
+        players: roomPlayers,
+        journeys: roomJourneys,
+        beliefOffers: roomOffers,
+      };
+    });
+
+    setClassRoomSummaries(summaries);
+    setClassDashboardLoading(false);
+    setMode("classDashboard");
+  }
+
+  function getCardTitle(cardId: string | null, cardType: "emotion" | "belief" | "response") {
+    if (!cardId) return "";
+
+    const source =
+      cardType === "emotion"
+        ? emotionCards
+        : cardType === "belief"
+          ? beliefCards
+          : responseCards;
+
+    return source.find((card) => card.id === cardId)?.title ?? "";
+  }
+
+  function countValues(values: string[]) {
+    const counts = new Map<string, number>();
+
+    values
+      .map((value) => value.trim())
+      .filter(Boolean)
+      .forEach((value) => {
+        counts.set(value, (counts.get(value) ?? 0) + 1);
+      });
+
+    return Array.from(counts.entries())
+      .map(([label, count]) => ({ label, count }))
+      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+  }
+
   function resetGame() {
     setCurrentStep(0);
     setSelectedEmotion(null);
@@ -279,6 +453,8 @@ const [draftCustomBeliefOffer, setDraftCustomBeliefOffer] = useState("");
     setBeliefOffers([]);
     setPromptReaders([]);
     setPromptReadAloudStep(-1);
+    setClassJoinError("");
+    setClassDashboardError("");
   }
   async function leaveRoom() {
     const leavingRoomCode = roomCode;
@@ -318,6 +494,7 @@ const [draftCustomBeliefOffer, setDraftCustomBeliefOffer] = useState("");
     setRoomCode("");
     setJoinCode("");
     setJoinError("");
+    setClassJoinError("");
     setPlayerName("");
     setJoinedPlayers([]);
     setMyPlayerId(null);
@@ -365,7 +542,7 @@ const [draftCustomBeliefOffer, setDraftCustomBeliefOffer] = useState("");
     const { data, error } = await supabase
       .from("rooms")
       .select(
-        "current_step, current_receiver_index, prompt_readers, prompt_read_aloud_step",
+        "current_step, current_receiver_index, prompt_readers, prompt_read_aloud_step, class_code",
       )
       .eq("room_code", code)
       .single();
@@ -378,6 +555,9 @@ const [draftCustomBeliefOffer, setDraftCustomBeliefOffer] = useState("");
     setCurrentReceiverIndex(data.current_receiver_index ?? 0);
     setPromptReaders(Array.isArray(data.prompt_readers) ? data.prompt_readers : []);
     setPromptReadAloudStep(data.prompt_read_aloud_step ?? -1);
+    if (data.class_code) {
+      setClassCode(data.class_code);
+    }
   }
   async function loadPlayerJourneys(code: string, players: RoomPlayer[]) {
     const { data, error } = await supabase
@@ -565,6 +745,7 @@ const [draftCustomBeliefOffer, setDraftCustomBeliefOffer] = useState("");
             current_receiver_index: number;
             prompt_readers?: number[];
             prompt_read_aloud_step?: number;
+            class_code?: string | null;
           };
           setMultiplayerStep(updatedRoom.current_step);
           setCurrentReceiverIndex(updatedRoom.current_receiver_index ?? 0);
@@ -572,6 +753,9 @@ const [draftCustomBeliefOffer, setDraftCustomBeliefOffer] = useState("");
             setPromptReaders(updatedRoom.prompt_readers);
           }
           setPromptReadAloudStep(updatedRoom.prompt_read_aloud_step ?? -1);
+          if (updatedRoom.class_code) {
+            setClassCode(updatedRoom.class_code);
+          }
 
           if (updatedRoom.current_step >= 0) {
             setMode("multi");
@@ -796,7 +980,7 @@ useEffect(() => {
           boxShadow: "0 8px 20px rgba(0,0,0,0.18)",
         }}
       >
-        Room: {roomCode}
+        {classCode ? `Class: ${classCode} · ` : ""}Room: {roomCode}
       </div>
     );
   }
@@ -991,6 +1175,7 @@ useEffect(() => {
 
               <button
                 onClick={async () => {
+                  setClassCode("");
                   const hostName = window.prompt(
                     "Enter your name as the host:",
                   );
@@ -1006,6 +1191,7 @@ useEffect(() => {
                   const { data, error } = await supabase.from("rooms").insert([
                     {
                       room_code: roomCode,
+                      class_code: null,
                       current_step: -1,
                       current_receiver_index: 0,
                       prompt_readers: [],
@@ -1077,6 +1263,47 @@ useEffect(() => {
                 >
                   A guided reflection room for you and others
                   to explore your emotions together.
+                </p>
+              </button>
+
+              <button
+                onClick={() => {
+                  resetGame();
+                  setClassJoinError("");
+                  setClassDashboardError("");
+                  setMode("classHome");
+                }}
+                onMouseEnter={() => setHoveredMode("class")}
+                onMouseLeave={() => setHoveredMode(null)}
+                style={{
+                  padding: "28px",
+                  borderRadius: "28px",
+                  border:
+                    hoveredMode === "class"
+                      ? "2px solid #0f766e"
+                      : "2px solid #d8d2c4",
+                  background: hoveredMode === "class" ? "#ccfbf1" : "#fffdf8",
+                  boxShadow:
+                    hoveredMode === "class"
+                      ? "0 18px 40px rgba(15,118,110,0.22)"
+                      : "0 14px 30px rgba(15,118,110,0.10)",
+                  transition: "all 180ms ease",
+                  textAlign: "left",
+                  cursor: "pointer",
+                }}
+              >
+                <h2 style={{ margin: 0, fontSize: "26px" }}>Class Mode</h2>
+                <p
+                  style={{
+                    marginTop: "12px",
+                    marginBottom: 0,
+                    fontSize: "16px",
+                    lineHeight: 1.6,
+                    color: "#52606d",
+                  }}
+                >
+                  Create a class session, let small groups play in rooms, then
+                  review aggregated themes afterwards.
                 </p>
               </button>
 
@@ -1205,6 +1432,7 @@ useEffect(() => {
                   }
 
                   setRoomCode(data.room_code);
+                  setClassCode(data.class_code ?? "");
                   const { data: playerData, error: playerError } =
                     await supabase
                       .from("players")
@@ -1291,6 +1519,726 @@ useEffect(() => {
       </main>
     );
   }
+
+  if (mode === "classHome") {
+    return (
+      <main style={pageStyle}>
+        <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
+          <button
+            onClick={() => setMode("home")}
+            style={{ ...secondaryButtonStyle, marginBottom: "24px" }}
+          >
+            ← Back
+          </button>
+
+          <section style={panelStyle}>
+            <p
+              style={{
+                marginTop: 0,
+                marginBottom: "8px",
+                fontSize: "14px",
+                fontWeight: "bold",
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                color: "#0f766e",
+              }}
+            >
+              Class Mode
+            </p>
+
+            <h1 style={{ marginTop: 0, fontSize: "42px" }}>
+              Create or join a class session
+            </h1>
+
+            <p style={{ fontSize: "18px", color: "#52606d", lineHeight: 1.7 }}>
+              A facilitator creates one class code. Small group hosts enter that
+              class code and create their own multiplayer rooms under it. Later,
+              the facilitator can view aggregated themes from all linked rooms.
+            </p>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+                gap: "24px",
+                marginTop: "32px",
+              }}
+            >
+              <div
+                style={{
+                  padding: "24px",
+                  borderRadius: "28px",
+                  background: "#fffdf8",
+                  boxShadow: "0 14px 30px rgba(15,118,110,0.10)",
+                }}
+              >
+                <h2 style={{ marginTop: 0 }}>Create class session</h2>
+
+                <p style={{ color: "#52606d", lineHeight: 1.6 }}>
+                  For teachers, facilitators, or workshop leads.
+                </p>
+
+                <input
+                  value={facilitatorName}
+                  onChange={(e) => setFacilitatorName(e.target.value)}
+                  placeholder="Facilitator name"
+                  style={{
+                    width: "100%",
+                    padding: "14px 12px",
+                    borderRadius: "16px",
+                    border: "2px solid #d8d2c4",
+                    fontSize: "16px",
+                    background: "#fffdf8",
+                    marginBottom: "12px",
+                    boxSizing: "border-box",
+                  }}
+                />
+
+                <input
+                  value={classSessionTitle}
+                  onChange={(e) => setClassSessionTitle(e.target.value)}
+                  placeholder="Class/session title, e.g. 2E3 CCE"
+                  style={{
+                    width: "100%",
+                    padding: "14px 12px",
+                    borderRadius: "16px",
+                    border: "2px solid #d8d2c4",
+                    fontSize: "16px",
+                    background: "#fffdf8",
+                    marginBottom: "12px",
+                    boxSizing: "border-box",
+                  }}
+                />
+
+                <textarea
+                  value={classTopic}
+                  onChange={(e) => setClassTopic(e.target.value)}
+                  placeholder="Optional topic/scenario, e.g. Cyberbullying case study"
+                  style={{
+                    width: "100%",
+                    minHeight: "90px",
+                    padding: "14px 12px",
+                    borderRadius: "16px",
+                    border: "2px solid #d8d2c4",
+                    fontSize: "16px",
+                    background: "#fffdf8",
+                    resize: "vertical",
+                    boxSizing: "border-box",
+                  }}
+                />
+
+                <button
+                  onClick={async () => {
+                    const newClassCode = generateShortCode(5);
+                    const newFacilitatorCode = generateShortCode(8);
+
+                    const { data, error } = await supabase
+                      .from("class_sessions")
+                      .insert([
+                        {
+                          class_code: newClassCode,
+                          facilitator_code: newFacilitatorCode,
+                          facilitator_name: facilitatorName.trim(),
+                          session_title: classSessionTitle.trim(),
+                          topic: classTopic.trim(),
+                        },
+                      ])
+                      .select("*")
+                      .single();
+
+                    if (error || !data) {
+                      setClassJoinError("Could not create class session. Try again.");
+                      return;
+                    }
+
+                    setClassSession(data as ClassSession);
+                    setClassCode(newClassCode);
+                    setFacilitatorCode(newFacilitatorCode);
+                    setClassRoomSummaries([]);
+                    setClassDashboardError("");
+                    setMode("classDashboard");
+                  }}
+                  style={{ ...primaryButtonStyle, marginTop: "18px" }}
+                >
+                  Generate class code
+                </button>
+              </div>
+
+              <div
+                style={{
+                  padding: "24px",
+                  borderRadius: "28px",
+                  background: "#fffdf8",
+                  boxShadow: "0 14px 30px rgba(15,118,110,0.10)",
+                }}
+              >
+                <h2 style={{ marginTop: 0 }}>Group host joins class</h2>
+
+                <p style={{ color: "#52606d", lineHeight: 1.6 }}>
+                  One person from each small group enters the class code, then
+                  creates a normal multiplayer room for their group.
+                </p>
+
+                <input
+                  value={classJoinCode}
+                  onChange={(e) => {
+                    setClassJoinCode(e.target.value.toUpperCase());
+                    setClassJoinError("");
+                  }}
+                  placeholder="Enter class code"
+                  style={{
+                    width: "100%",
+                    padding: "16px 12px",
+                    borderRadius: "16px",
+                    border: "2px solid #d8d2c4",
+                    fontSize: "16px",
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    background: "#fffdf8",
+                    fontWeight: "bold",
+                    boxSizing: "border-box",
+                  }}
+                />
+
+                <button
+                  onClick={async () => {
+                    const cleanedCode = classJoinCode.trim().toUpperCase();
+
+                    if (!cleanedCode) {
+                      setClassJoinError("Please enter a class code.");
+                      return;
+                    }
+
+                    const { data, error } = await supabase
+                      .from("class_sessions")
+                      .select("*")
+                      .eq("class_code", cleanedCode)
+                      .single();
+
+                    if (error || !data) {
+                      setClassJoinError("Class session not found. Check the code.");
+                      return;
+                    }
+
+                    setClassSession(data as ClassSession);
+                    setClassCode(cleanedCode);
+                    setPlayerName("");
+                    setMode("classGroupStart");
+                  }}
+                  style={{ ...primaryButtonStyle, marginTop: "18px" }}
+                >
+                  Create a group room under this class
+                </button>
+
+                {classJoinError && (
+                  <p style={{ color: "#b91c1c", marginTop: "12px" }}>
+                    {classJoinError}
+                  </p>
+                )}
+              </div>
+
+              <div
+                style={{
+                  padding: "24px",
+                  borderRadius: "28px",
+                  background: "#fffdf8",
+                  boxShadow: "0 14px 30px rgba(15,118,110,0.10)",
+                }}
+              >
+                <h2 style={{ marginTop: 0 }}>View class summary</h2>
+
+                <p style={{ color: "#52606d", lineHeight: 1.6 }}>
+                  Facilitators can view aggregated themes using the class code
+                  and facilitator code.
+                </p>
+
+                <input
+                  value={classCode}
+                  onChange={(e) => {
+                    setClassCode(e.target.value.toUpperCase());
+                    setClassDashboardError("");
+                  }}
+                  placeholder="Class code"
+                  style={{
+                    width: "100%",
+                    padding: "14px 12px",
+                    borderRadius: "16px",
+                    border: "2px solid #d8d2c4",
+                    fontSize: "16px",
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    background: "#fffdf8",
+                    marginBottom: "12px",
+                    fontWeight: "bold",
+                    boxSizing: "border-box",
+                  }}
+                />
+
+                <input
+                  value={facilitatorCode}
+                  onChange={(e) => {
+                    setFacilitatorCode(e.target.value.toUpperCase());
+                    setClassDashboardError("");
+                  }}
+                  placeholder="Facilitator code"
+                  style={{
+                    width: "100%",
+                    padding: "14px 12px",
+                    borderRadius: "16px",
+                    border: "2px solid #d8d2c4",
+                    fontSize: "16px",
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    background: "#fffdf8",
+                    fontWeight: "bold",
+                    boxSizing: "border-box",
+                  }}
+                />
+
+                <button
+                  onClick={async () => {
+                    await loadClassDashboard(classCode, facilitatorCode);
+                  }}
+                  style={{ ...primaryButtonStyle, marginTop: "18px" }}
+                >
+                  {classDashboardLoading ? "Loading..." : "View summary"}
+                </button>
+
+                {classDashboardError && (
+                  <p style={{ color: "#b91c1c", marginTop: "12px" }}>
+                    {classDashboardError}
+                  </p>
+                )}
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    );
+  }
+
+  if (mode === "classGroupStart") {
+    return (
+      <main style={pageStyle}>
+        <div style={{ maxWidth: "850px", margin: "0 auto" }}>
+          <button
+            onClick={() => setMode("classHome")}
+            style={{ ...secondaryButtonStyle, marginBottom: "24px" }}
+          >
+            ← Back to Class Mode
+          </button>
+
+          <section style={panelStyle}>
+            <p
+              style={{
+                marginTop: 0,
+                marginBottom: "8px",
+                fontSize: "14px",
+                fontWeight: "bold",
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                color: "#0f766e",
+              }}
+            >
+              Class {classCode}
+            </p>
+
+            <h1 style={{ marginTop: 0, fontSize: "40px" }}>
+              Create your group room
+            </h1>
+
+            <p style={{ color: "#52606d", fontSize: "18px", lineHeight: 1.7 }}>
+              You are creating a normal multiplayer room that will be linked to
+              this class session for later class-level summary.
+            </p>
+
+            {classSession && (
+              <div
+                style={{
+                  marginTop: "22px",
+                  padding: "20px",
+                  borderRadius: "22px",
+                  background: "#ecfdf5",
+                  color: "#065f46",
+                  lineHeight: 1.6,
+                }}
+              >
+                <strong>{classSession.session_title || "Class session"}</strong>
+                {classSession.topic && (
+                  <>
+                    <br />
+                    Topic: {classSession.topic}
+                  </>
+                )}
+              </div>
+            )}
+
+            <input
+              value={playerName}
+              onChange={(e) => setPlayerName(e.target.value)}
+              placeholder="Your name as group host"
+              style={{
+                width: "100%",
+                padding: "16px 12px",
+                borderRadius: "16px",
+                border: "2px solid #d8d2c4",
+                fontSize: "16px",
+                background: "#fffdf8",
+                marginTop: "24px",
+                boxSizing: "border-box",
+              }}
+            />
+
+            <button
+              onClick={async () => {
+                const hostName = playerName.trim();
+
+                if (!hostName || !classCode) {
+                  setClassJoinError("Please enter your name.");
+                  return;
+                }
+
+                const newRoomCode = Math.random()
+                  .toString(36)
+                  .substring(2, 8)
+                  .toUpperCase();
+
+                const { error } = await supabase.from("rooms").insert([
+                  {
+                    room_code: newRoomCode,
+                    class_code: classCode,
+                    current_step: -1,
+                    current_receiver_index: 0,
+                    prompt_readers: [],
+                    prompt_read_aloud_step: -1,
+                  },
+                ]);
+
+                if (error) {
+                  setClassJoinError("Could not create group room. Try again.");
+                  return;
+                }
+
+                setRoomCode(newRoomCode);
+                setIsHost(true);
+
+                const { data: playerData, error: playerError } = await supabase
+                  .from("players")
+                  .insert([
+                    {
+                      room_code: newRoomCode,
+                      player_name: hostName,
+                    },
+                  ])
+                  .select("id")
+                  .single();
+
+                if (!playerError && playerData) {
+                  setMyPlayerId(playerData.id);
+
+                  savePlayerSession({
+                    roomCode: newRoomCode,
+                    playerId: playerData.id,
+                    playerName: hostName,
+                    isHost: true,
+                  });
+                }
+
+                await loadJoinedPlayers(newRoomCode);
+                await loadRoomStep(newRoomCode);
+                setMode("multiLobby");
+              }}
+              style={{ ...primaryButtonStyle, marginTop: "22px" }}
+            >
+              Create linked multiplayer room
+            </button>
+
+            {classJoinError && (
+              <p style={{ color: "#b91c1c", marginTop: "12px" }}>
+                {classJoinError}
+              </p>
+            )}
+          </section>
+        </div>
+      </main>
+    );
+  }
+
+  if (mode === "classDashboard") {
+    const allJourneys = classRoomSummaries.flatMap((summary) => summary.journeys);
+    const completedJourneys = allJourneys.filter(
+      (journey) => journey.emotion || journey.belief || journey.response,
+    );
+
+    const emotionCounts = countValues(
+      completedJourneys.map((journey) =>
+        journey.emotion === EMOTION_WILD_CARD_ID
+          ? journey.customEmotion
+          : getCardTitle(journey.emotion, "emotion"),
+      ),
+    );
+
+    const beliefCounts = countValues(
+      completedJourneys.map((journey) =>
+        journey.belief === BELIEF_WILD_CARD_ID
+          ? journey.customBelief
+          : getCardTitle(journey.belief, "belief"),
+      ),
+    );
+
+    const finalBeliefCounts = countValues(
+      completedJourneys.map((journey) =>
+        journey.finalBelief === BELIEF_WILD_CARD_ID
+          ? journey.customFinalBelief
+          : getCardTitle(journey.finalBelief, "belief"),
+      ),
+    );
+
+    const responseCounts = countValues(
+      completedJourneys.map((journey) =>
+        journey.finalResponse
+          ? journey.finalResponse === RESPONSE_WILD_CARD_ID
+            ? journey.customFinalResponse
+            : getCardTitle(journey.finalResponse, "response")
+          : journey.response === RESPONSE_WILD_CARD_ID
+            ? journey.customResponse
+            : getCardTitle(journey.response, "response"),
+      ),
+    );
+
+    const customTexts = completedJourneys
+      .flatMap((journey) => [
+        journey.situationText,
+        journey.customBelief,
+        journey.customFinalBelief,
+        journey.responseReflection,
+        journey.reflectionText,
+      ])
+      .map((text) => text.trim())
+      .filter(Boolean);
+
+    return (
+      <main style={pageStyle}>
+        <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
+          <button
+            onClick={() => setMode("classHome")}
+            style={{ ...secondaryButtonStyle, marginBottom: "24px" }}
+          >
+            ← Back to Class Mode
+          </button>
+
+          <section style={panelStyle}>
+            <p
+              style={{
+                marginTop: 0,
+                marginBottom: "8px",
+                fontSize: "14px",
+                fontWeight: "bold",
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                color: "#0f766e",
+              }}
+            >
+              Class Summary
+            </p>
+
+            <h1 style={{ marginTop: 0, fontSize: "42px" }}>
+              {classSession?.session_title || `Class ${classCode}`}
+            </h1>
+
+            {classSession?.topic && (
+              <p style={{ fontSize: "18px", color: "#52606d", lineHeight: 1.7 }}>
+                Topic: {classSession.topic}
+              </p>
+            )}
+
+            {classSession && (
+              <div
+                style={{
+                  marginTop: "20px",
+                  padding: "20px",
+                  borderRadius: "22px",
+                  background: "#ecfdf5",
+                  color: "#065f46",
+                  lineHeight: 1.7,
+                }}
+              >
+                <strong>Share with group hosts:</strong> Class code{" "}
+                <strong>{classSession.class_code}</strong>
+                <br />
+                <strong>Keep private:</strong> Facilitator code{" "}
+                <strong>{classSession.facilitator_code}</strong>
+              </div>
+            )}
+
+            <button
+              onClick={async () => {
+                await loadClassDashboard(classCode, facilitatorCode);
+              }}
+              style={{ ...primaryButtonStyle, marginTop: "24px" }}
+            >
+              Refresh summary
+            </button>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                gap: "18px",
+                marginTop: "30px",
+              }}
+            >
+              <div style={{ padding: "20px", borderRadius: "22px", background: "#fffdf8" }}>
+                <strong>Rooms</strong>
+                <p style={{ fontSize: "32px", margin: "8px 0 0" }}>
+                  {classRoomSummaries.length}
+                </p>
+              </div>
+
+              <div style={{ padding: "20px", borderRadius: "22px", background: "#fffdf8" }}>
+                <strong>Players</strong>
+                <p style={{ fontSize: "32px", margin: "8px 0 0" }}>
+                  {classRoomSummaries.reduce(
+                    (total, room) => total + room.players.length,
+                    0,
+                  )}
+                </p>
+              </div>
+
+              <div style={{ padding: "20px", borderRadius: "22px", background: "#fffdf8" }}>
+                <strong>Journeys started</strong>
+                <p style={{ fontSize: "32px", margin: "8px 0 0" }}>
+                  {completedJourneys.length}
+                </p>
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+                gap: "22px",
+                marginTop: "30px",
+              }}
+            >
+              {[
+                ["Common emotions", emotionCounts],
+                ["Common original beliefs", beliefCounts],
+                ["Common final beliefs", finalBeliefCounts],
+                ["Common responses", responseCounts],
+              ].map(([title, rows]) => (
+                <div
+                  key={title as string}
+                  style={{
+                    padding: "22px",
+                    borderRadius: "24px",
+                    background: "#fffdf8",
+                    boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
+                  }}
+                >
+                  <h3 style={{ marginTop: 0 }}>{title as string}</h3>
+
+                  {(rows as { label: string; count: number }[]).length === 0 ? (
+                    <p style={{ color: "#52606d" }}>No data yet.</p>
+                  ) : (
+                    (rows as { label: string; count: number }[])
+                      .slice(0, 8)
+                      .map((row) => (
+                        <p
+                          key={row.label}
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            gap: "14px",
+                            borderBottom: "1px solid #e7e2d7",
+                            paddingBottom: "8px",
+                          }}
+                        >
+                          <span>{row.label}</span>
+                          <strong>{row.count}</strong>
+                        </p>
+                      ))
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div
+              style={{
+                marginTop: "30px",
+                padding: "24px",
+                borderRadius: "24px",
+                background: "#fffdf8",
+                boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
+              }}
+            >
+              <h3 style={{ marginTop: 0 }}>Custom text for later AI theme analysis</h3>
+
+              <p style={{ color: "#52606d", lineHeight: 1.7 }}>
+                This section collects typed responses across the class. Later,
+                this can be sent to an AI summariser to identify recurring
+                themes. For now, it is displayed as anonymised raw text.
+              </p>
+
+              {customTexts.length === 0 ? (
+                <p style={{ color: "#52606d" }}>No typed responses yet.</p>
+              ) : (
+                <div style={{ display: "grid", gap: "12px" }}>
+                  {customTexts.slice(0, 30).map((text, index) => (
+                    <div
+                      key={`${text}-${index}`}
+                      style={{
+                        padding: "14px 16px",
+                        borderRadius: "18px",
+                        background: "rgba(236,253,245,0.65)",
+                        color: "#164e63",
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      “{text}”
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div
+              style={{
+                marginTop: "30px",
+                display: "grid",
+                gap: "16px",
+              }}
+            >
+              <h3>Linked group rooms</h3>
+
+              {classRoomSummaries.length === 0 ? (
+                <p style={{ color: "#52606d" }}>
+                  No group rooms have been linked to this class session yet.
+                </p>
+              ) : (
+                classRoomSummaries.map((summary) => (
+                  <div
+                    key={summary.room_code}
+                    style={{
+                      padding: "18px 20px",
+                      borderRadius: "20px",
+                      background: "#fffdf8",
+                      boxShadow: "0 8px 20px rgba(0,0,0,0.06)",
+                    }}
+                  >
+                    <strong>Room {summary.room_code}</strong>
+                    <br />
+                    {summary.players.length} players · {summary.journeys.filter((journey) => journey.emotion || journey.belief || journey.response).length} journeys started
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
+        </div>
+      </main>
+    );
+  }
+
 if (mode === "free") {
   return (
     <main style={pageStyle}>
