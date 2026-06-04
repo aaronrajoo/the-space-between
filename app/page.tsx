@@ -63,6 +63,7 @@ type BeliefOffer = {
   receiverIndex: number;
   giverIndex: number;
   beliefId: string;
+  customBelief?: string;
 };
 type SavedPlayerSession = {
   roomCode: string;
@@ -177,6 +178,7 @@ const [draftCustomFinalEmotion, setDraftCustomFinalEmotion] = useState("");
 const [draftCustomFinalResponse, setDraftCustomFinalResponse] = useState("");
 const [draftReflectionText, setDraftReflectionText] = useState("");
 const [draftBeliefOfferId, setDraftBeliefOfferId] = useState<string | null>(null);
+const [draftCustomBeliefOffer, setDraftCustomBeliefOffer] = useState("");
   const selectedEmotionCard = emotionCards.find(
     (card) => card.id === selectedEmotion,
   );
@@ -397,7 +399,7 @@ const [draftBeliefOfferId, setDraftBeliefOfferId] = useState<string | null>(null
   async function loadBeliefOffers(code: string) {
     const { data, error } = await supabase
       .from("belief_offers")
-      .select("receiver_index, giver_index, belief_id")
+      .select("receiver_index, giver_index, belief_id, custom_belief")
       .eq("room_code", code);
 
     if (error) {
@@ -409,6 +411,7 @@ const [draftBeliefOfferId, setDraftBeliefOfferId] = useState<string | null>(null
         receiverIndex: row.receiver_index,
         giverIndex: row.giver_index,
         beliefId: row.belief_id,
+        customBelief: row.custom_belief ?? "",
       })),
     );
   }
@@ -1523,12 +1526,12 @@ if (mode === "free") {
     const promptDefinitions = [
       {
         title: "Step 1 — Emotion",
-        prompt: "Think of a recent situation that affected you emotionally. It may be something everyone here experienced, or something personal to you. What emotion did you feel most strongly in that moment?",
+        prompt: "Think about the situation, topic, or experience you are reflecting on. It may be something shared or something personal. What emotion feels most true?",
       },
       {
         title: "Step 2 — Situation",
         prompt:
-          "Describe what happened using facts only. Imagine reporting what a camera would have recorded.",
+          "Describe what happened or what is being discussed using facts only. Imagine reporting what a camera would have recorded.",
       },
       {
         title: "Step 3 — Belief",
@@ -2130,7 +2133,7 @@ zIndex: 50,
                     }}
                   >
                     <strong>{promptReader}</strong>, read this prompt aloud to
-                    the table: “Think of a recent situation that affected you emotionally. It may be something everyone here experienced, or something personal to you. What emotion did you feel most strongly in that moment?”
+                    the table: “Think about the situation, topic, or experience you are reflecting on. It may be something shared or something personal. What emotion feels most true?”
                   </p>
 
                   <div
@@ -2276,7 +2279,7 @@ zIndex: 50,
                     }}
                   >
                     <strong>{promptReader}</strong>, read this prompt aloud to
-                    the table: “Describe what happened using facts only. Imagine
+                    the table: “Describe what happened or what is being discussed using facts only. Imagine
                     reporting what a camera would have recorded.”
                   </p>
 
@@ -3304,12 +3307,11 @@ zIndex: 50,
                       >
                         {beliefCards
                           .filter(
-                            (card) =>
-                              card.id !== BELIEF_WILD_CARD_ID &&
-                              card.id !==
-                                multiplayerJourneys[currentReceiverIndex]
-                                  .belief,
-                          )
+  (card) =>
+    card.id !==
+      multiplayerJourneys[currentReceiverIndex]
+        .belief,
+)
                           .map((card) => (
                             <button
                               key={card.id}
@@ -3329,7 +3331,11 @@ zIndex: 50,
                           ))}
                       </div>
                       <button
-  disabled={!draftBeliefOfferId}
+  disabled={
+  !draftBeliefOfferId ||
+  (draftBeliefOfferId === BELIEF_WILD_CARD_ID &&
+    draftCustomBeliefOffer.trim().length === 0)
+}
   onClick={async () => {
   if (myPlayerIndex < 0 || !roomCode || !draftBeliefOfferId) return;
 
@@ -3347,10 +3353,14 @@ zIndex: 50,
     return [
       ...withoutCurrentOffer,
       {
-        receiverIndex: currentReceiverIndex,
-        giverIndex: myPlayerIndex,
-        beliefId: confirmedBeliefOfferId,
-      },
+  receiverIndex: currentReceiverIndex,
+  giverIndex: myPlayerIndex,
+  beliefId: draftBeliefOfferId,
+  customBelief:
+    draftBeliefOfferId === BELIEF_WILD_CARD_ID
+      ? draftCustomBeliefOffer.trim()
+      : "",
+},
     ];
   });
 
@@ -3359,8 +3369,12 @@ zIndex: 50,
       room_code: roomCode,
       receiver_index: currentReceiverIndex,
       giver_index: myPlayerIndex,
-      belief_id: confirmedBeliefOfferId,
-      updated_at: new Date().toISOString(),
+      belief_id: draftBeliefOfferId,
+custom_belief:
+  draftBeliefOfferId === BELIEF_WILD_CARD_ID
+    ? draftCustomBeliefOffer.trim()
+    : "",
+updated_at: new Date().toISOString(),
     },
     {
       onConflict: "room_code,receiver_index,giver_index",
@@ -3368,6 +3382,7 @@ zIndex: 50,
   );
 
   setDraftBeliefOfferId(null);
+  setDraftCustomBeliefOffer("");
 }}
   style={{
     ...primaryButtonStyle,
@@ -3376,6 +3391,34 @@ zIndex: 50,
     cursor: draftBeliefOfferId ? "pointer" : "not-allowed",
   }}
 >
+  {draftBeliefOfferId === BELIEF_WILD_CARD_ID && (
+  <div
+    style={{
+      marginTop: "24px",
+      padding: "22px",
+      borderRadius: "22px",
+      background: "rgba(255,255,255,0.75)",
+    }}
+  >
+    <h4 style={{ marginTop: 0 }}>Write your own alternative belief</h4>
+
+    <textarea
+      placeholder="Type a possible belief here..."
+      value={draftCustomBeliefOffer}
+      onChange={(e) => setDraftCustomBeliefOffer(e.target.value)}
+      style={{
+        width: "100%",
+        minHeight: "120px",
+        padding: "18px",
+        borderRadius: "18px",
+        border: "2px solid #d8d2c4",
+        fontSize: "17px",
+        resize: "vertical",
+        background: "#fffdf8",
+      }}
+    />
+  </div>
+)}
   Confirm this alternative belief
 </button>
                     </>
@@ -3546,20 +3589,28 @@ zIndex: 50,
                     }}
                   >
                     {[
-                      {
-                        beliefId: activeJourney.belief,
-                        label: "Original belief",
-                        giver: "You",
-                      },
-                      ...beliefOffers
-                        .filter(
-                          (offer) => offer.receiverIndex === myPlayerIndex,
-                        )
-                        .map((offer) => ({
-                          beliefId: offer.beliefId,
-                          label: "Alternative belief",
-                          })),
-                    ]
+  {
+    beliefId: activeJourney.belief,
+    customBelief:
+      activeJourney.belief === BELIEF_WILD_CARD_ID
+        ? activeJourney.customBelief
+        : "",
+    label: "Original belief",
+    giver: "You",
+  },
+  ...beliefOffers
+    .filter(
+      (offer) => offer.receiverIndex === myPlayerIndex,
+    )
+    .map((offer) => ({
+      beliefId: offer.beliefId,
+      customBelief: offer.customBelief ?? "",
+      label: "Offered belief",
+      giver:
+        joinedPlayers[offer.giverIndex]?.player_name ||
+        "Player",
+    })),
+]
                       .filter((item, index, array) => {
                         if (!item.beliefId) return false;
                         if (item.beliefId !== BELIEF_WILD_CARD_ID) return true;
@@ -3571,10 +3622,15 @@ zIndex: 50,
                       })
                       .map((item, index) => {
                         const card = beliefCards.find(
-                          (belief) => belief.id === item.beliefId,
-                        );
+  (belief) => belief.id === item.beliefId,
+);
 
-                        if (!card) return null;
+if (!card) return null;
+
+const displayBeliefText =
+  item.beliefId === BELIEF_WILD_CARD_ID
+    ? item.customBelief
+    : "";
 
                         const isSelected =
                            (
@@ -3622,22 +3678,23 @@ zIndex: 50,
                               alt={card.title}
                               style={{ width: "100%", display: "block" }}
                             />
-                            {card.id === "belief_wild_card" &&
-                              activeJourney.customBelief?.trim().length > 0 && (
-                                <div
-                                  style={{
-                                    padding: "14px",
-                                    fontSize: "15px",
-                                    lineHeight: 1.5,
-                                    color: "#115e59",
-                                    background: "#ccfbf1",
-                                    textAlign: "left",
-                                  }}
-                                >
-                                  <strong>You wrote:</strong>
-                                  <br />“{activeJourney.customBelief}”
-                                </div>
-                              )}
+                            {card.id === BELIEF_WILD_CARD_ID &&
+ displayBeliefText?.trim().length > 0 && (
+  <div
+    style={{
+      padding: "14px",
+      fontSize: "15px",
+      lineHeight: 1.5,
+      color: "#115e59",
+      background: "#ccfbf1",
+      textAlign: "left",
+    }}
+  >
+    <strong>Belief:</strong>
+    <br />
+    “{displayBeliefText}”
+  </div>
+)}
                           </button>
                         );
                       })}
@@ -4658,7 +4715,7 @@ zIndex: 50,
               </h2>
 
               <p style={{ fontSize: "19px", color: "#52606d" }}>
-                Describe what happened using facts only. Imagine reporting what
+                Describe what happened or what is being discussed using facts only. Imagine reporting what
                 a camera would have recorded.
               </p>
 
