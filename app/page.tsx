@@ -3330,6 +3330,35 @@ zIndex: 50,
                             </button>
                           ))}
                       </div>
+                      {draftBeliefOfferId === BELIEF_WILD_CARD_ID && (
+  <div
+    style={{
+      marginTop: "24px",
+      padding: "22px",
+      borderRadius: "22px",
+      background: "rgba(255,255,255,0.75)",
+    }}
+  >
+    <h4 style={{ marginTop: 0 }}>Write your own alternative belief</h4>
+
+    <textarea
+      placeholder="Type a possible belief here..."
+      value={draftCustomBeliefOffer}
+      onChange={(e) => setDraftCustomBeliefOffer(e.target.value)}
+      style={{
+        width: "100%",
+        minHeight: "120px",
+        padding: "18px",
+        borderRadius: "18px",
+        border: "2px solid #d8d2c4",
+        fontSize: "17px",
+        resize: "vertical",
+        background: "#fffdf8",
+        color: "#1f2933",
+      }}
+    />
+  </div>
+)}
                       <button
   disabled={
   !draftBeliefOfferId ||
@@ -3365,25 +3394,25 @@ zIndex: 50,
   });
 
   await supabase.from("belief_offers").upsert(
-    {
-      room_code: roomCode,
-      receiver_index: currentReceiverIndex,
-      giver_index: myPlayerIndex,
-      belief_id: draftBeliefOfferId,
-custom_belief:
-  draftBeliefOfferId === BELIEF_WILD_CARD_ID
-    ? draftCustomBeliefOffer.trim()
-    : "",
-updated_at: new Date().toISOString(),
-    },
-    {
-      onConflict: "room_code,receiver_index,giver_index",
-    },
-  );
+      {
+        room_code: roomCode,
+        receiver_index: currentReceiverIndex,
+        giver_index: myPlayerIndex,
+        belief_id: draftBeliefOfferId,
+        custom_belief:
+          draftBeliefOfferId === BELIEF_WILD_CARD_ID
+            ? draftCustomBeliefOffer.trim()
+            : "",
+        updated_at: new Date().toISOString(),
+      },
+      {
+        onConflict: "room_code,receiver_index,giver_index",
+      },
+    );
 
-  setDraftBeliefOfferId(null);
-  setDraftCustomBeliefOffer("");
-}}
+    setDraftBeliefOfferId(null);
+    setDraftCustomBeliefOffer("");
+  }}
   style={{
     ...primaryButtonStyle,
     marginTop: "24px",
@@ -3391,34 +3420,6 @@ updated_at: new Date().toISOString(),
     cursor: draftBeliefOfferId ? "pointer" : "not-allowed",
   }}
 >
-  {draftBeliefOfferId === BELIEF_WILD_CARD_ID && (
-  <div
-    style={{
-      marginTop: "24px",
-      padding: "22px",
-      borderRadius: "22px",
-      background: "rgba(255,255,255,0.75)",
-    }}
-  >
-    <h4 style={{ marginTop: 0 }}>Write your own alternative belief</h4>
-
-    <textarea
-      placeholder="Type a possible belief here..."
-      value={draftCustomBeliefOffer}
-      onChange={(e) => setDraftCustomBeliefOffer(e.target.value)}
-      style={{
-        width: "100%",
-        minHeight: "120px",
-        padding: "18px",
-        borderRadius: "18px",
-        border: "2px solid #d8d2c4",
-        fontSize: "17px",
-        resize: "vertical",
-        background: "#fffdf8",
-      }}
-    />
-  </div>
-)}
   Confirm this alternative belief
 </button>
                     </>
