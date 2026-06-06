@@ -164,6 +164,13 @@ export const cards: GameCard[] = [
     image: "/cards/emotions/emotion_gratitude.webp",
   },
   {
+    id: "emotion_joy",
+    type: "emotion",
+    theme: "Joy",
+    title: "Hope",
+    image: "/cards/emotions/emotion_hope.webp",
+  },
+  {
     id: "emotion_peace",
     type: "emotion",
     theme: "Joy",
