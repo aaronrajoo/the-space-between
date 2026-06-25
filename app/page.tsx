@@ -72,6 +72,11 @@ type SavedPlayerSession = {
   isHost: boolean;
 };
 
+type SavedClassDashboardSession = {
+  classCode: string;
+  facilitatorCode: string;
+};
+
 type ClassSession = {
   class_code: string;
   facilitator_code: string;
@@ -130,6 +135,14 @@ function savePlayerSession(session: SavedPlayerSession) {
 
 function clearPlayerSession() {
   localStorage.removeItem("space-between-player-session");
+}
+
+function saveClassDashboardSession(session: SavedClassDashboardSession) {
+  localStorage.setItem("space-between-class-session", JSON.stringify(session));
+}
+
+function clearClassDashboardSession() {
+  localStorage.removeItem("space-between-class-session");
 }
 export default function Home() {
   const [mode, setMode] = useState<
@@ -320,6 +333,10 @@ const [draftCustomBeliefOffer, setDraftCustomBeliefOffer] = useState("");
     setClassSession(sessionData as ClassSession);
     setClassCode(cleanedClassCode);
     setFacilitatorCode(cleanedFacilitatorCode);
+    saveClassDashboardSession({
+      classCode: cleanedClassCode,
+      facilitatorCode: cleanedFacilitatorCode,
+    });
 
     const { data: roomsData, error: roomsError } = await supabase
       .from("rooms")
@@ -648,8 +665,9 @@ const [draftCustomBeliefOffer, setDraftCustomBeliefOffer] = useState("");
   }
   useEffect(() => {
     const saved = localStorage.getItem("space-between-player-session");
+    const savedClassDashboard = localStorage.getItem("space-between-class-session");
 
-    if (!saved || mode !== "home") return;
+    if (savedClassDashboard || !saved || mode !== "home") return;
 
     async function checkSavedSession() {
       const session = JSON.parse(saved!) as SavedPlayerSession;
@@ -708,6 +726,30 @@ const [draftCustomBeliefOffer, setDraftCustomBeliefOffer] = useState("");
 
     checkSavedSession();
   }, [mode]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("space-between-class-session");
+
+    if (!saved || mode !== "home") return;
+
+    async function restoreClassDashboard() {
+      try {
+        const session = JSON.parse(saved!) as SavedClassDashboardSession;
+
+        if (!session.classCode || !session.facilitatorCode) {
+          clearClassDashboardSession();
+          return;
+        }
+
+        await loadClassDashboard(session.classCode, session.facilitatorCode);
+      } catch {
+        clearClassDashboardSession();
+      }
+    }
+
+    restoreClassDashboard();
+  }, [mode]);
+
   useEffect(() => {
     if (!roomCode) return;
 
@@ -1704,6 +1746,10 @@ useEffect(() => {
                     setClassSession(data as ClassSession);
                     setClassCode(newClassCode);
                     setFacilitatorCode(newFacilitatorCode);
+                    saveClassDashboardSession({
+                      classCode: newClassCode,
+                      facilitatorCode: newFacilitatorCode,
+                    });
                     setClassRoomSummaries([]);
                     setClassDashboardError("");
                     setMode("classDashboard");
