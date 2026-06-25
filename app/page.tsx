@@ -774,10 +774,6 @@ const [draftCustomBeliefOffer, setDraftCustomBeliefOffer] = useState("");
             setMode("multi");
           }
 
-         
-  if (mode === "multiLobby") {
-            setMode("multi");
-          }
         },
       )
       .subscribe();
@@ -818,7 +814,7 @@ const [draftCustomBeliefOffer, setDraftCustomBeliefOffer] = useState("");
       supabase.removeChannel(journeysChannel);
       supabase.removeChannel(beliefOffersChannel);
     };
-  }, [roomCode, myPlayerId]);
+  }, [roomCode]);
 useEffect(() => {
   const stepCard = document.getElementById("step-card");
 
@@ -1429,12 +1425,47 @@ useEffect(() => {
               <button
                 onClick={async () => {
                   const cleanedCode = joinCode.trim().toUpperCase();
-                  if (!playerName.trim()) {
-                    setJoinError("Please enter your name.");
-                    return;
-                  }
+
                   if (!cleanedCode) {
                     setJoinError("Please enter a room code.");
+                    return;
+                  }
+
+                  const saved = localStorage.getItem("space-between-player-session");
+
+                  if (saved) {
+                    try {
+                      const session = JSON.parse(saved) as SavedPlayerSession;
+
+                      if (session.roomCode === cleanedCode) {
+                        const { data: existingPlayer } = await supabase
+                          .from("players")
+                          .select("id, player_name")
+                          .eq("room_code", session.roomCode)
+                          .eq("id", session.playerId)
+                          .single();
+
+                        if (existingPlayer) {
+                          setRoomCode(session.roomCode);
+                          setMyPlayerId(session.playerId);
+                          setPlayerName(session.playerName);
+
+                          const players = await loadJoinedPlayers(session.roomCode);
+                          await loadRoomStep(session.roomCode, session.playerId);
+                          await loadPlayerJourneys(session.roomCode, players);
+                          await loadBeliefOffers(session.roomCode);
+
+                          setMode("multiLobby");
+                          return;
+                        }
+                      }
+                    } catch {
+                      clearPlayerSession();
+                    }
+                  }
+
+                  if (!playerName.trim()) {
+                    setJoinError("Please enter your name.");
                     return;
                   }
 
@@ -1480,7 +1511,6 @@ useEffect(() => {
                   await loadJoinedPlayers(data.room_code);
                   await loadRoomStep(data.room_code, playerData.id);
 
-                  setIsHost(false);
                   setMode("multiLobby");
                 }}
                 style={{
@@ -2484,12 +2514,7 @@ if (mode === "free") {
               Current Stage:{" "}
               {multiplayerStep < 0 ? "Lobby" : `Step ${multiplayerStep + 1}`}
             </p>
-<p>
-  isHost: {String(isHost)} <br />
-  myPlayerId: {myPlayerId} <br />
-  firstPlayer: {joinedPlayers[0]?.id}
-</p>
-            {(isHost ||
+{(isHost ||
   Boolean(myPlayerId && joinedPlayers[0]?.id === myPlayerId)) && (
   <button
                 onClick={async () => {
