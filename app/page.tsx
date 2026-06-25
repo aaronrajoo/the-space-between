@@ -538,11 +538,11 @@ const [draftCustomBeliefOffer, setDraftCustomBeliefOffer] = useState("");
     return data;
   }
 
-  async function loadRoomStep(code: string) {
+  async function loadRoomStep(code: string, playerId?: string) {
     const { data, error } = await supabase
       .from("rooms")
       .select(
-        "current_step, current_receiver_index, prompt_readers, prompt_read_aloud_step, class_code",
+        "current_step, current_receiver_index, prompt_readers, prompt_read_aloud_step, class_code, host_player_id",
       )
       .eq("room_code", code)
       .single();
@@ -557,6 +557,9 @@ const [draftCustomBeliefOffer, setDraftCustomBeliefOffer] = useState("");
     setPromptReadAloudStep(data.prompt_read_aloud_step ?? -1);
     if (data.class_code) {
       setClassCode(data.class_code);
+    }
+    if (playerId) {
+      setIsHost(data.host_player_id === playerId);
     }
   }
   async function loadPlayerJourneys(code: string, players: RoomPlayer[]) {
@@ -678,9 +681,15 @@ const [draftCustomBeliefOffer, setDraftCustomBeliefOffer] = useState("");
       setPlayerName(session.playerName);
 
       const players = await loadJoinedPlayers(session.roomCode);
-      const hostPlayerId = players[0]?.id;
-      setIsHost(session.playerId === hostPlayerId);
-      await loadRoomStep(session.roomCode);
+
+      const { data: hostRoomData } = await supabase
+        .from("rooms")
+        .select("host_player_id")
+        .eq("room_code", session.roomCode)
+        .single();
+
+      setIsHost(hostRoomData?.host_player_id === session.playerId);
+      await loadRoomStep(session.roomCode, session.playerId);
       await loadPlayerJourneys(session.roomCode, players);
       await loadBeliefOffers(session.roomCode);
 
@@ -704,7 +713,7 @@ const [draftCustomBeliefOffer, setDraftCustomBeliefOffer] = useState("");
 
     async function initialiseRoom() {
       const players = await loadJoinedPlayers(roomCode);
-      await loadRoomStep(roomCode);
+      await loadRoomStep(roomCode, myPlayerId ?? undefined);
       await loadPlayerJourneys(roomCode, players);
       await loadBeliefOffers(roomCode);
     }
@@ -746,6 +755,7 @@ const [draftCustomBeliefOffer, setDraftCustomBeliefOffer] = useState("");
             prompt_readers?: number[];
             prompt_read_aloud_step?: number;
             class_code?: string | null;
+            host_player_id?: string | null;
           };
           setMultiplayerStep(updatedRoom.current_step);
           setCurrentReceiverIndex(updatedRoom.current_receiver_index ?? 0);
@@ -755,6 +765,9 @@ const [draftCustomBeliefOffer, setDraftCustomBeliefOffer] = useState("");
           setPromptReadAloudStep(updatedRoom.prompt_read_aloud_step ?? -1);
           if (updatedRoom.class_code) {
             setClassCode(updatedRoom.class_code);
+          }
+          if (myPlayerId) {
+            setIsHost(updatedRoom.host_player_id === myPlayerId);
           }
 
           if (updatedRoom.current_step >= 0) {
@@ -805,7 +818,7 @@ const [draftCustomBeliefOffer, setDraftCustomBeliefOffer] = useState("");
       supabase.removeChannel(journeysChannel);
       supabase.removeChannel(beliefOffersChannel);
     };
-  }, [roomCode]);
+  }, [roomCode, myPlayerId]);
 useEffect(() => {
   const stepCard = document.getElementById("step-card");
 
@@ -1218,6 +1231,13 @@ useEffect(() => {
                     if (!playerError && playerData) {
                       setMyPlayerId(playerData.id);
 
+                      await supabase
+                        .from("rooms")
+                        .update({
+                          host_player_id: playerData.id,
+                        })
+                        .eq("room_code", roomCode);
+
                       savePlayerSession({
                         roomCode,
                         playerId: playerData.id,
@@ -1227,7 +1247,7 @@ useEffect(() => {
                     }
 
                     await loadJoinedPlayers(roomCode);
-                    await loadRoomStep(roomCode);
+                    await loadRoomStep(roomCode, playerData?.id);
 
                     setMode("multiLobby");
                   }
@@ -1458,7 +1478,7 @@ useEffect(() => {
                     isHost: false,
                   });
                   await loadJoinedPlayers(data.room_code);
-                  await loadRoomStep(data.room_code);
+                  await loadRoomStep(data.room_code, playerData.id);
 
                   setIsHost(false);
                   setMode("multiLobby");
@@ -1936,6 +1956,13 @@ useEffect(() => {
                 if (!playerError && playerData) {
                   setMyPlayerId(playerData.id);
 
+                  await supabase
+                    .from("rooms")
+                    .update({
+                      host_player_id: playerData.id,
+                    })
+                    .eq("room_code", newRoomCode);
+
                   savePlayerSession({
                     roomCode: newRoomCode,
                     playerId: playerData.id,
@@ -1945,7 +1972,7 @@ useEffect(() => {
                 }
 
                 await loadJoinedPlayers(newRoomCode);
-                await loadRoomStep(newRoomCode);
+                await loadRoomStep(newRoomCode, playerData?.id);
                 setMode("multiLobby");
               }}
               style={{ ...primaryButtonStyle, marginTop: "22px" }}
