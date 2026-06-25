@@ -2484,9 +2484,14 @@ if (mode === "free") {
               Current Stage:{" "}
               {multiplayerStep < 0 ? "Lobby" : `Step ${multiplayerStep + 1}`}
             </p>
-
-            {isHost && (
-              <button
+<p>
+  isHost: {String(isHost)} <br />
+  myPlayerId: {myPlayerId} <br />
+  firstPlayer: {joinedPlayers[0]?.id}
+</p>
+            {(isHost ||
+  Boolean(myPlayerId && joinedPlayers[0]?.id === myPlayerId)) && (
+  <button
                 onClick={async () => {
                   if (joinedPlayers.length < 2 || !roomCode) return;
                   const readers = pickPromptReaders(10, joinedPlayers.length);
