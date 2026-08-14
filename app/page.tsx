@@ -1093,7 +1093,7 @@ useEffect(() => {
       </div>
     );
   }
-function FeedbackWidget() {
+function renderFeedbackWidget() {
   async function submitFeedback() {
     if (!feedbackComment.trim()) return;
 
@@ -1257,7 +1257,7 @@ function FeedbackWidget() {
   if (mode === "home") {
     return (
       <main style={pageStyle}>
-<FeedbackWidget />
+{renderFeedbackWidget()}
         {roomCode && (
           <div
             style={{
