@@ -2123,12 +2123,39 @@ useEffect(() => {
     return (
       <main style={pageStyle}>
         <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
-          <button
-            onClick={() => setMode("classHome")}
-            style={{ ...secondaryButtonStyle, marginBottom: "24px" }}
-          >
-            ← Back to Class Mode
-          </button>
+    <div
+  style={{
+    display: "flex",
+    gap: "12px",
+    flexWrap: "wrap",
+    marginBottom: "24px",
+  }}
+>
+  <button
+    onClick={() => setMode("classHome")}
+    style={secondaryButtonStyle}
+  >
+    ← Back to Class Mode
+  </button>
+
+  <button
+    onClick={() => {
+      const confirmed = window.confirm(
+        "Clear the saved session on this device and return to the home screen?",
+      );
+
+      if (!confirmed) return;
+
+      localStorage.removeItem("space-between-player-session");
+      localStorage.removeItem("space-between-class-session");
+
+      window.location.href = "/";
+    }}
+    style={secondaryButtonStyle}
+  >
+    Reset Saved Session
+  </button>
+</div>
 
           <section style={panelStyle}>
             <p
