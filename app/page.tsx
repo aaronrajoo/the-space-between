@@ -194,6 +194,10 @@ export default function Home() {
   const [joinedPlayers, setJoinedPlayers] = useState<RoomPlayer[]>([]);
   const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
   const [isHost, setIsHost] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+const [feedbackCategory, setFeedbackCategory] = useState("");
+const [feedbackComment, setFeedbackComment] = useState("");
+const [feedbackSent, setFeedbackSent] = useState(false);
 
   // Class/session mode state
   const [classCode, setClassCode] = useState("");
@@ -1089,10 +1093,171 @@ useEffect(() => {
       </div>
     );
   }
+function FeedbackWidget() {
+  async function submitFeedback() {
+    if (!feedbackComment.trim()) return;
 
+    const { error } = await supabase.from("feedback").insert([
+      {
+        comment: feedbackComment.trim(),
+        category: feedbackCategory || null,
+        mode,
+        class_code: classCode || null,
+        room_code: roomCode || null,
+      },
+    ]);
+
+    if (error) {
+      alert("Could not send feedback. Please try again.");
+      return;
+    }
+
+    setFeedbackSent(true);
+    setFeedbackComment("");
+    setFeedbackCategory("");
+
+    setTimeout(() => {
+      setFeedbackOpen(false);
+      setFeedbackSent(false);
+    }, 1800);
+  }
+
+  return (
+    <>
+      <button
+        onClick={() => setFeedbackOpen(true)}
+        style={{
+          position: "fixed",
+          bottom: "20px",
+          right: "20px",
+          zIndex: 9998,
+          ...primaryButtonStyle,
+        }}
+      >
+        Give Feedback
+      </button>
+
+      {feedbackOpen && (
+        <div
+          onClick={() => setFeedbackOpen(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            background: "rgba(15,23,42,0.55)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%",
+              maxWidth: "480px",
+              padding: "24px",
+              borderRadius: "24px",
+              background: "#fffdf8",
+              boxShadow: "0 24px 70px rgba(0,0,0,0.30)",
+            }}
+          >
+            <h2 style={{ marginTop: 0 }}>Give Feedback</h2>
+
+            {feedbackSent ? (
+              <p
+                style={{
+                  fontSize: "18px",
+                  color: "#0f766e",
+                  fontWeight: "bold",
+                }}
+              >
+                Thanks — feedback sent.
+              </p>
+            ) : (
+              <>
+                <p style={{ color: "#52606d", lineHeight: 1.6 }}>
+                  What worked, what was confusing, or what could be better?
+                </p>
+
+                <select
+                  value={feedbackCategory}
+                  onChange={(e) => setFeedbackCategory(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "14px",
+                    borderRadius: "14px",
+                    border: "2px solid #d8d2c4",
+                    background: "#fffdf8",
+                    fontSize: "16px",
+                    marginBottom: "14px",
+                  }}
+                >
+                  <option value="">Optional category</option>
+                  <option value="worked-well">Something worked well</option>
+                  <option value="confusing">Something was confusing</option>
+                  <option value="bug">I found a bug</option>
+                  <option value="idea">I have an idea</option>
+                </select>
+
+                <textarea
+                  value={feedbackComment}
+                  onChange={(e) => setFeedbackComment(e.target.value)}
+                  placeholder="Type your feedback here..."
+                  style={{
+                    width: "100%",
+                    minHeight: "130px",
+                    padding: "14px",
+                    borderRadius: "14px",
+                    border: "2px solid #d8d2c4",
+                    background: "#fffdf8",
+                    fontSize: "16px",
+                    resize: "vertical",
+                    boxSizing: "border-box",
+                  }}
+                />
+
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "12px",
+                    marginTop: "18px",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <button
+                    onClick={submitFeedback}
+                    disabled={!feedbackComment.trim()}
+                    style={{
+                      ...primaryButtonStyle,
+                      opacity: feedbackComment.trim() ? 1 : 0.45,
+                      cursor: feedbackComment.trim()
+                        ? "pointer"
+                        : "not-allowed",
+                    }}
+                  >
+                    Send Feedback
+                  </button>
+
+                  <button
+                    onClick={() => setFeedbackOpen(false)}
+                    style={secondaryButtonStyle}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
   if (mode === "home") {
     return (
       <main style={pageStyle}>
+<FeedbackWidget />
         {roomCode && (
           <div
             style={{
