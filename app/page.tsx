@@ -956,6 +956,7 @@ useEffect(() => {
           textAlign: "center",
         }}
       >
+      {renderFeedbackWidget()}
         <p
           style={{
             marginTop: 0,
@@ -4376,6 +4377,7 @@ zIndex: 50,
                     boxShadow: "0 12px 30px rgba(0,0,0,0.08)",
                   }}
                 >
+                   {renderFeedbackWidget()}
                   <h2 style={{ fontSize: "30px", marginTop: 0 }}>
                     Level 1 Complete
                   </h2>
